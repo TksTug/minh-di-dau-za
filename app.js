@@ -2070,6 +2070,7 @@ function initFoodManager() {
     const modalTabCount = document.getElementById('modal-foods-tab-count');
     if (badgeCount) badgeCount.textContent = foods.length;
     if (modalTabCount) modalTabCount.textContent = foods.length;
+    if (typeof window.renderPublicMenuModal === 'function') window.renderPublicMenuModal();
     listContainer.innerHTML = '';
     
     foods.forEach((food) => {
@@ -2356,6 +2357,7 @@ function renderPlaceList() {
   const listContainer = document.getElementById('places-list-items');
   const modalTabCount = document.getElementById('modal-places-tab-count');
   if (modalTabCount) modalTabCount.textContent = places.length;
+  if (typeof window.renderPublicMenuModal === 'function') window.renderPublicMenuModal();
   if (!listContainer) return;
   listContainer.innerHTML = '';
 
@@ -2909,6 +2911,243 @@ function initSuggestionModal() {
       showCatToast("Cảm ơn bạn đã gửi gợi ý cho quán! Quán đã nhận được và sẽ xem xét thêm vào thực đơn nhé 💕🐾", "success");
     };
   }
+}
+
+// --- 11E. PUBLIC READ-ONLY MENU MODAL (XEM THỰC ĐƠN & ĐỊA ĐIỂM VÒNG QUAY) ---
+function initPublicMenuModal() {
+  const modal = document.getElementById('public-menu-modal');
+  if (!modal) return;
+
+  const btnOpenHeader = document.getElementById('btn-open-public-menu');
+  const btnClose = document.getElementById('btn-close-public-menu');
+  const btnCloseBottom = document.getElementById('btn-close-public-menu-btn');
+  const btnQuickFood = document.getElementById('btn-quick-view-menu-food');
+  const btnQuickPlace = document.getElementById('btn-quick-view-menu-place');
+
+  const tabFoods = document.getElementById('public-menu-tab-foods');
+  const tabPlaces = document.getElementById('public-menu-tab-places');
+  const countFoodsEl = document.getElementById('public-menu-foods-count');
+  const countPlacesEl = document.getElementById('public-menu-places-count');
+  const visibleCountEl = document.getElementById('public-menu-visible-count');
+  const countInfoEl = document.getElementById('public-menu-count-info');
+
+  const searchInput = document.getElementById('public-menu-search');
+  const categoryFilter = document.getElementById('public-menu-category-filter');
+  const itemsGrid = document.getElementById('public-menu-items-grid');
+  const emptyState = document.getElementById('public-menu-empty');
+
+  let currentTab = 'food'; // 'food' or 'place'
+
+  function updateCategoryOptions() {
+    if (!categoryFilter) return;
+    const prevVal = categoryFilter.value;
+    categoryFilter.innerHTML = '';
+
+    const defaultOpt = document.createElement('option');
+    defaultOpt.value = 'all';
+    defaultOpt.textContent = currentTab === 'food' ? '🌟 Tất cả món ăn' : '🌟 Tất cả địa điểm';
+    categoryFilter.appendChild(defaultOpt);
+
+    if (currentTab === 'food') {
+      mealTags.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.key;
+        opt.textContent = `${t.icon || '🏷️'} ${t.label}`;
+        categoryFilter.appendChild(opt);
+      });
+    } else {
+      placeTags.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.key;
+        opt.textContent = `${t.icon || '🏷️'} ${t.label}`;
+        categoryFilter.appendChild(opt);
+      });
+    }
+
+    if ([...categoryFilter.options].some(o => o.value === prevVal)) {
+      categoryFilter.value = prevVal;
+    } else {
+      categoryFilter.value = 'all';
+    }
+  }
+
+  function renderItems() {
+    if (!itemsGrid) return;
+    const query = (searchInput ? searchInput.value.trim().toLowerCase() : '');
+    const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
+
+    // Update tab badges
+    if (countFoodsEl) countFoodsEl.textContent = foods.length;
+    if (countPlacesEl) countPlacesEl.textContent = places.length;
+
+    itemsGrid.innerHTML = '';
+
+    if (currentTab === 'food') {
+      const filtered = foods.filter(food => {
+        const matchQuery = !query ||
+          food.name.toLowerCase().includes(query) ||
+          (food.category && food.category.toLowerCase().includes(query)) ||
+          (food.mealTimes && food.mealTimes.some(m => m.toLowerCase().includes(query)));
+        
+        const matchCategory = selectedCategory === 'all' ||
+          (food.mealTimes && food.mealTimes.includes(selectedCategory)) ||
+          food.category === selectedCategory;
+
+        return matchQuery && matchCategory;
+      });
+
+      if (visibleCountEl) visibleCountEl.textContent = filtered.length;
+      if (countInfoEl) {
+        countInfoEl.innerHTML = `Hiển thị <b class="text-rose-600 font-black">${filtered.length}</b> món ăn`;
+      }
+
+      if (filtered.length === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        itemsGrid.classList.add('hidden');
+      } else {
+        if (emptyState) emptyState.classList.add('hidden');
+        itemsGrid.classList.remove('hidden');
+
+        filtered.forEach(food => {
+          const card = document.createElement('div');
+          card.className = 'flex items-center gap-2.5 p-2.5 bg-rose-50/60 hover:bg-rose-100/70 rounded-2xl border border-rose-100/90 transition-all hover:shadow-xs';
+
+          const mediaHtml = food.image
+            ? `<img src="${food.image}" alt="${food.name}" class="w-12 h-12 rounded-xl object-cover shadow-2xs border border-rose-200 flex-shrink-0">`
+            : `<div class="w-12 h-12 rounded-xl bg-white border border-rose-200 flex items-center justify-center text-2xl flex-shrink-0 shadow-2xs">${food.icon || '🍱'}</div>`;
+
+          const tagsHtml = ((food.mealTimes && food.mealTimes.length) ? food.mealTimes : ['trua']).map(getMealTagBadgeHtml).join(' ');
+
+          card.innerHTML = `
+            ${mediaHtml}
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1 flex-wrap">
+                <h4 class="font-extrabold text-stone-800 text-xs sm:text-sm truncate" title="${food.name}">${food.name}</h4>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0 shadow-2xs">
+                  ${formatPrice(food.price)}
+                </span>
+              </div>
+              <div class="flex items-center gap-1 mt-1 flex-wrap">
+                ${tagsHtml}
+              </div>
+            </div>
+          `;
+          itemsGrid.appendChild(card);
+        });
+      }
+
+    } else {
+      // PLACES TAB
+      const filtered = places.filter(place => {
+        const matchQuery = !query ||
+          place.name.toLowerCase().includes(query) ||
+          (place.placeTags && place.placeTags.some(t => t.toLowerCase().includes(query)));
+
+        const matchCategory = selectedCategory === 'all' ||
+          (place.placeTags && place.placeTags.includes(selectedCategory)) ||
+          place.category === selectedCategory;
+
+        return matchQuery && matchCategory;
+      });
+
+      if (visibleCountEl) visibleCountEl.textContent = filtered.length;
+      if (countInfoEl) {
+        countInfoEl.innerHTML = `Hiển thị <b class="text-amber-600 font-black">${filtered.length}</b> địa điểm`;
+      }
+
+      if (filtered.length === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        itemsGrid.classList.add('hidden');
+      } else {
+        if (emptyState) emptyState.classList.add('hidden');
+        itemsGrid.classList.remove('hidden');
+
+        filtered.forEach(place => {
+          const card = document.createElement('div');
+          card.className = 'flex items-center gap-2.5 p-2.5 bg-amber-50/60 hover:bg-amber-100/70 rounded-2xl border border-amber-200/90 transition-all hover:shadow-xs';
+
+          const costVal = Number(place.cost) || 0;
+          const costBadge = costVal === 0
+            ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">🆓 Miễn phí</span>`
+            : `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-2xs">~${formatPrice(costVal)}</span>`;
+
+          const tagsHtml = ((place.placeTags && place.placeTags.length) ? place.placeTags : ['chill']).map(getPlaceTagBadgeHtml).join(' ');
+
+          card.innerHTML = `
+            <div class="w-12 h-12 rounded-xl bg-white border border-amber-200 flex items-center justify-center text-2xl flex-shrink-0 shadow-2xs">
+              ${place.icon || '🎡'}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1 flex-wrap">
+                <h4 class="font-extrabold text-stone-800 text-xs sm:text-sm truncate" title="${place.name}">${place.name}</h4>
+                ${costBadge}
+              </div>
+              <div class="flex items-center gap-1 mt-1 flex-wrap">
+                ${tagsHtml}
+              </div>
+            </div>
+          `;
+          itemsGrid.appendChild(card);
+        });
+      }
+    }
+  }
+
+  function setTab(tab) {
+    currentTab = tab;
+    if (tab === 'food') {
+      tabFoods.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate cursor-pointer';
+      tabPlaces.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
+      if (searchInput) searchInput.placeholder = 'Tìm tên món ăn (phở, bún, trà sữa...)...';
+    } else {
+      tabPlaces.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-amber-700 shadow-sm truncate cursor-pointer';
+      tabFoods.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
+      if (searchInput) searchInput.placeholder = 'Tìm địa điểm vui chơi (hồ tây, cafe, rạp phim...)...';
+    }
+    updateCategoryOptions();
+    renderItems();
+  }
+
+  function open(preferredTab) {
+    audio.playPop();
+    const tabToOpen = preferredTab || (appMode === 'place' ? 'place' : 'food');
+    setTab(tabToOpen);
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    if (window.gsap) {
+      gsap.fromTo('#public-menu-modal > div', { scale: 0.88, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.25, ease: 'back.out(1.5)' });
+    }
+    if (searchInput) {
+      setTimeout(() => searchInput.focus(), 150);
+    }
+  }
+
+  function close() {
+    audio.playPop();
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  // Event handlers
+  if (btnOpenHeader) btnOpenHeader.onclick = () => open();
+  if (btnQuickFood) btnQuickFood.onclick = () => open('food');
+  if (btnQuickPlace) btnQuickPlace.onclick = () => open('place');
+  if (btnClose) btnClose.onclick = close;
+  if (btnCloseBottom) btnCloseBottom.onclick = close;
+
+  if (tabFoods) tabFoods.onclick = () => { audio.playPop(); setTab('food'); };
+  if (tabPlaces) tabPlaces.onclick = () => { audio.playPop(); setTab('place'); };
+
+  if (searchInput) searchInput.oninput = renderItems;
+  if (categoryFilter) categoryFilter.onchange = renderItems;
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) close();
+  });
+
+  window.openPublicMenuModal = open;
+  window.renderPublicMenuModal = renderItems;
 }
 
 // --- 12. DUAL FILTERS: THỜI ĐIỂM ĂN & MỨC GIÁ (CHO FOOD) ---
@@ -4041,6 +4280,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initCoupleWishlist();
   updateAdminBranding();
   initSuggestionModal();
+  initPublicMenuModal();
   initResultActions();
   setupClawMachine();
   setupSlotMachine();

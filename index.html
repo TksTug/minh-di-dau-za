@@ -90,10 +90,16 @@
         ⏭️
       </button>
 
-      <!-- Manage Items Button -->
-      <button id="btn-open-foods" class="btn-jelly px-3 md:px-4 py-2 rounded-xl md:rounded-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-extrabold text-xs flex items-center space-x-1.5 shadow-sm">
-        <span id="header-manage-icon" class="text-sm">📋</span>
-        <span id="header-manage-text">Thực đơn (<span id="foods-badge-count">14</span>)</span>
+      <!-- Public Menu Button -->
+      <button id="btn-open-public-menu" class="btn-jelly px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-white hover:bg-rose-50 border-2 border-rose-300 text-rose-600 font-black text-xs flex items-center space-x-1 shadow-xs cursor-pointer transition-all active:scale-95" title="Xem danh sách các món có trong vòng quay">
+        <span class="text-sm">📖</span>
+        <span>Menu</span>
+      </button>
+
+      <!-- Manage Items Button (Admin) -->
+      <button id="btn-open-foods" class="btn-jelly px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-extrabold text-xs flex items-center space-x-1 shadow-sm cursor-pointer transition-all active:scale-95" title="Quản trị thực đơn & địa điểm (Dành cho chủ quán)">
+        <span id="header-manage-icon" class="text-sm">⚙️</span>
+        <span id="header-manage-text">Quản trị</span>
       </button>
     </div>
   </header>
@@ -184,9 +190,12 @@
         </div>
       </div>
 
-      <!-- Live Count Status -->
-      <div class="text-[11px] font-bold text-stone-500 pt-0.5">
+      <!-- Live Count Status & Quick Menu View -->
+      <div class="text-[11px] font-bold text-stone-500 pt-0.5 flex items-center justify-between">
         <span id="filter-status-text">🐾 Đang có <b class="text-rose-600 font-black text-xs" id="filtered-count-num">36</b> món phù hợp để quay</span>
+        <button type="button" id="btn-quick-view-menu-food" class="text-[11px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-0.5 rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95">
+          <span>📖</span> <span>Xem Menu</span>
+        </button>
       </div>
 
     </div>
@@ -225,9 +234,12 @@
         </div>
       </div>
 
-      <!-- Live Count Status -->
-      <div class="text-[11px] font-bold text-stone-500 pt-0.5">
+      <!-- Live Count Status & Quick Menu View -->
+      <div class="text-[11px] font-bold text-stone-500 pt-0.5 flex items-center justify-between">
         <span id="place-filter-status-text">🐾 Đang có <b class="text-amber-600 font-black text-xs" id="filtered-place-count-num">20</b> địa điểm phù hợp để đi chơi</span>
+        <button type="button" id="btn-quick-view-menu-place" class="text-[11px] font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95">
+          <span>📖</span> <span>Xem Menu</span>
+        </button>
       </div>
 
     </div>
@@ -954,6 +966,78 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: XEM MENU CÔNG KHAI (DÀNH CHO KHÁCH & VÒNG QUAY) ================= -->
+  <div id="public-menu-modal" class="fixed inset-0 bg-black/65 backdrop-blur-md z-50 hidden items-center justify-center p-2 sm:p-4">
+    <div class="w-full max-w-xl md:max-w-2xl bg-white rounded-3xl p-3.5 sm:p-5 border-4 border-rose-200 shadow-2xl relative flex flex-col h-[88vh] sm:h-auto sm:min-h-[580px] max-h-[94vh]">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-2.5 border-b border-rose-100 flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <span class="text-2xl sm:text-3xl">📖</span>
+          <div>
+            <h3 class="font-black text-base sm:text-lg text-stone-800 leading-tight">Thực Đơn Vòng Quay</h3>
+            <p class="text-[11px] sm:text-xs text-stone-400 font-bold">Danh sách tất cả món ăn & điểm vui chơi có thể quay trúng</p>
+          </div>
+        </div>
+        <button id="btn-close-public-menu" class="p-1.5 sm:p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-rose-50 cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Mode Switch Tabs: Món Ăn vs Địa Điểm -->
+      <div class="grid grid-cols-2 gap-1.5 p-1 bg-rose-100/70 rounded-2xl border border-rose-200 mt-2 mb-2 flex-shrink-0">
+        <button id="public-menu-tab-foods" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate cursor-pointer">
+          <span>🍜</span>
+          <span>Món Ăn (<span id="public-menu-foods-count">36</span>)</span>
+        </button>
+        <button id="public-menu-tab-places" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer">
+          <span>🎡</span>
+          <span>Địa Điểm (<span id="public-menu-places-count">20</span>)</span>
+        </button>
+      </div>
+
+      <!-- Search & Category Filters -->
+      <div class="flex items-center gap-2 mb-2 flex-shrink-0">
+        <div class="relative flex-1">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">🔍</span>
+          <input id="public-menu-search" type="text" placeholder="Tìm tên món, địa điểm..." class="w-full pl-8 pr-3 py-1.5 sm:py-2 text-xs font-bold rounded-xl border border-rose-200 bg-rose-50/50 focus:bg-white focus:border-rose-400 focus:outline-none transition-all placeholder:text-stone-400">
+        </div>
+        <select id="public-menu-category-filter" class="py-1.5 sm:py-2 px-2 text-xs font-black rounded-xl border border-rose-200 bg-white text-stone-700 focus:outline-none focus:border-rose-400 cursor-pointer max-w-[140px] sm:max-w-none">
+          <option value="all">Tất cả danh mục</option>
+        </select>
+      </div>
+
+      <!-- Live Count Notice -->
+      <div class="text-[11px] font-bold text-stone-400 px-1 mb-1.5 flex items-center justify-between flex-shrink-0">
+        <span id="public-menu-count-info">Hiển thị <b id="public-menu-visible-count" class="text-rose-600 font-black">0</b> mục</span>
+        <span class="text-[10px] text-stone-400 hidden sm:inline">✨ Tỷ lệ quay trúng ngẫu nhiên công bằng</span>
+      </div>
+
+      <!-- Items Grid/List Container -->
+      <div id="public-menu-items-grid" class="flex-1 overflow-y-auto custom-scrollbar pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2 content-start">
+        <!-- Injected via JavaScript -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="public-menu-empty" class="hidden flex-1 flex flex-col items-center justify-center text-center p-6 gap-2">
+        <span class="text-3xl">😿</span>
+        <p class="text-xs sm:text-sm font-black text-stone-600">Không tìm thấy món hoặc địa điểm phù hợp!</p>
+        <p class="text-[11px] text-stone-400">Thử gõ từ khóa khác hoặc chuyển danh mục xem sao nha Sen.</p>
+      </div>
+
+      <!-- Footer Note & Close Button -->
+      <div class="pt-2 sm:pt-2.5 mt-2 border-t border-rose-100 flex items-center justify-between flex-shrink-0">
+        <p class="text-[10px] sm:text-[11px] text-stone-400 font-semibold truncate mr-2">
+          🐾 Muốn thêm món yêu thích? Bấm nút <b>"Gợi ý cho shop"</b> bên góc phải nha!
+        </p>
+        <button id="btn-close-public-menu-btn" class="px-3.5 py-1.5 rounded-xl bg-stone-100 hover:bg-rose-100 text-stone-700 hover:text-rose-700 text-xs font-black transition-colors flex-shrink-0 cursor-pointer">
+          Đóng lại 🐾
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- ================= MODAL: QUẢN LÝ THỰC ĐƠN & ĐỊA ĐIỂM ================= -->
   <div id="foods-modal" class="fixed inset-0 bg-black/65 backdrop-blur-md z-50 hidden items-center justify-center p-2 sm:p-4">
     <div class="w-full max-w-xl md:max-w-2xl bg-white rounded-3xl p-3.5 sm:p-5 border-4 border-rose-200 shadow-2xl relative flex flex-col h-[88vh] sm:h-auto sm:min-h-[580px] max-h-[94vh]">
@@ -1299,6 +1383,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
   <!-- Application Script with Cache Buster -->
-  <script src="app.js?v=3.8"></script>
+  <script src="app.js?v=3.9"></script>
 </body>
 </html>
