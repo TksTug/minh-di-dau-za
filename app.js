@@ -2182,6 +2182,8 @@ function initFoodManager() {
     const suggTabCount = document.getElementById('modal-suggestions-tab-count');
     if (suggTabCount) suggTabCount.textContent = suggestions.length;
     renderSuggestionsList();
+    const tabFoods = document.getElementById('modal-tab-foods');
+    if (tabFoods) tabFoods.click();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     if (window.gsap) {
@@ -2693,9 +2695,9 @@ function initModalTabs() {
     [tabFoods, tabPlaces, tabWishlist, tabSuggestions].forEach(tab => {
       if (!tab) return;
       if (tab === activeTab) {
-        tab.className = 'flex-1 min-w-[65px] py-1.5 rounded-xl font-black text-[11px] sm:text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm';
+        tab.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate';
       } else {
-        tab.className = 'flex-1 min-w-[65px] py-1.5 rounded-xl font-black text-[11px] sm:text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+        tab.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate';
       }
     });
   }
