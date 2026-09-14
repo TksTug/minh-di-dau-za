@@ -179,6 +179,35 @@ function sanitizeCloudTags(val) {
   return list.filter(item => item && typeof item === 'object' && item.key && item.label);
 }
 
+// Customer Suggestions Data (Chỉ admin thấy)
+let suggestions = [];
+
+function sanitizeCloudSuggestions(val) {
+  if (!val) return [];
+  let list = [];
+  if (Array.isArray(val)) {
+    list = val;
+  } else if (typeof val === 'object') {
+    list = Object.values(val);
+  }
+  return list.filter(item => item && typeof item === 'object' && item.foodName && typeof item.foodName === 'string');
+}
+
+function loadSuggestions() {
+  const saved = localStorage.getItem('customer_suggestions_v1');
+  if (saved) {
+    try {
+      suggestions = JSON.parse(saved);
+    } catch (e) {
+      suggestions = [];
+    }
+  }
+}
+
+function saveSuggestionsLocally() {
+  localStorage.setItem('customer_suggestions_v1', JSON.stringify(suggestions));
+}
+
 function initFirebaseSync() {
   if (typeof firebase === 'undefined') {
     console.warn("Firebase SDK not detected, running in local storage mode.");
@@ -309,6 +338,15 @@ function initFirebaseSync() {
           fbDb.ref('coupleWishlist').set(coupleWishlist);
         }
       }
+    });
+
+    // 6. SYNC CUSTOMER SUGGESTIONS (Chỉ hiển thị cho chủ quán trong Admin)
+    fbDb.ref('suggestions').on('value', snapshot => {
+      const val = snapshot.val();
+      suggestions = sanitizeCloudSuggestions(val);
+      saveSuggestionsLocally();
+      if (typeof renderSuggestionsList === 'function') renderSuggestionsList();
+      if (typeof updateSuggestionsTabCount === 'function') updateSuggestionsTabCount();
     });
 
   } catch (err) {
@@ -2141,6 +2179,9 @@ function initFoodManager() {
     renderModalPlaceTags();
     const wlTabCount = document.getElementById('modal-wishlist-tab-count');
     if (wlTabCount) wlTabCount.textContent = coupleWishlist.length;
+    const suggTabCount = document.getElementById('modal-suggestions-tab-count');
+    if (suggTabCount) suggTabCount.textContent = suggestions.length;
+    renderSuggestionsList();
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     if (window.gsap) {
@@ -2528,13 +2569,114 @@ function initPlacesManager() {
   renderModalPlaceTags();
 }
 
+function updateSuggestionsTabCount() {
+  const badge = document.getElementById('modal-suggestions-tab-count');
+  if (badge) badge.textContent = suggestions.length;
+}
+
+function renderSuggestionsList() {
+  const container = document.getElementById('suggestions-list-container');
+  const emptyState = document.getElementById('suggestions-empty-state');
+  if (!container) return;
+  container.innerHTML = '';
+
+  updateSuggestionsTabCount();
+
+  if (!suggestions || suggestions.length === 0) {
+    if (emptyState) {
+      emptyState.classList.remove('hidden');
+      emptyState.classList.add('flex');
+    }
+    return;
+  }
+  if (emptyState) {
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
+  }
+
+  suggestions.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'p-3 bg-white rounded-2xl border border-amber-200 shadow-xs hover:border-amber-300 transition-all flex flex-col gap-1.5';
+
+    const priceBadge = s.price && Number(s.price) > 0
+      ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">~${formatPrice(Number(s.price))}</span>`
+      : '';
+
+    card.innerHTML = `
+      <div class="flex items-center justify-between flex-wrap gap-1">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-base">🍜</span>
+          <span class="font-black text-stone-800 text-sm">${escapeHtml(s.foodName)}</span>
+          ${priceBadge}
+        </div>
+        <span class="text-[10px] text-stone-400 font-semibold">${escapeHtml(s.createdAt || '')}</span>
+      </div>
+      ${s.location ? `<div class="text-xs text-stone-600 font-semibold flex items-center gap-1">📍 <span>${escapeHtml(s.location)}</span></div>` : ''}
+      ${s.note ? `<div class="text-xs text-stone-600 italic bg-amber-50/70 p-2 rounded-xl border border-amber-100">💬 "${escapeHtml(s.note)}"</div>` : ''}
+      <div class="flex items-center justify-between pt-1 border-t border-stone-100 flex-wrap gap-2">
+        <span class="text-[10px] text-rose-500 font-bold">Người gửi: <b>${escapeHtml(s.sender || 'Khách dễ thương')}</b></span>
+        <div class="flex items-center gap-1.5">
+          <button class="btn-adopt-suggestion px-2.5 py-1 rounded-lg text-xs font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-xs flex items-center gap-1 transition-all" title="Chuyển sang form thêm món ăn">
+            <span>➕</span> <span>Thêm vào thực đơn</span>
+          </button>
+          <button class="btn-delete-suggestion w-7 h-7 rounded-lg text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors" title="Xóa gợi ý này">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+
+    const adoptBtn = card.querySelector('.btn-adopt-suggestion');
+    if (adoptBtn) {
+      adoptBtn.onclick = () => {
+        audio.playPop();
+        const tabFoods = document.getElementById('modal-tab-foods');
+        if (tabFoods) tabFoods.click();
+
+        const nameInput = document.getElementById('new-food-name');
+        const priceInput = document.getElementById('new-food-price');
+        if (nameInput) {
+          nameInput.value = s.foodName;
+          nameInput.focus();
+        }
+        if (priceInput && s.price) {
+          priceInput.value = s.price;
+        }
+        showCatToast(`Đã nạp món "${s.foodName}" vào form! Hãy chọn nhóm rồi bấm Thêm món nha ✨`, 'edit');
+      };
+    }
+
+    const delBtn = card.querySelector('.btn-delete-suggestion');
+    if (delBtn) {
+      delBtn.onclick = async () => {
+        const ok = await showCatConfirm(`Sen có chắc muốn xóa gợi ý món "<b>${s.foodName}</b>" này không? 🗑️`, "Xóa Gợi Ý?", "🗑️", "Xóa Ngay 🐾");
+        if (!ok) return;
+        suggestions = suggestions.filter(item => item.id !== s.id);
+        saveSuggestionsLocally();
+        if (fbDb) {
+          fbDb.ref('suggestions').child(String(s.id)).remove().catch(e => console.warn(e));
+        }
+        renderSuggestionsList();
+        updateSuggestionsTabCount();
+        audio.playPop();
+        showCatToast(`Đã xóa gợi ý "${s.foodName}"!`, "delete");
+      };
+    }
+
+    container.appendChild(card);
+  });
+}
+
 function initModalTabs() {
   const tabFoods = document.getElementById('modal-tab-foods');
   const tabPlaces = document.getElementById('modal-tab-places');
   const tabWishlist = document.getElementById('modal-tab-wishlist');
+  const tabSuggestions = document.getElementById('modal-tab-suggestions');
+
   const secFoods = document.getElementById('modal-foods-section');
   const secPlaces = document.getElementById('modal-places-section');
   const secWishlist = document.getElementById('modal-wishlist-section');
+  const secSuggestions = document.getElementById('modal-suggestions-section');
 
   function updateModalWishlistStats() {
     const totalEl = document.getElementById('modal-wl-total');
@@ -2547,27 +2689,36 @@ function initModalTabs() {
     if (pendingEl) pendingEl.textContent = coupleWishlist.filter(i => i.status !== 'done').length;
   }
 
+  function setTabActive(activeTab) {
+    [tabFoods, tabPlaces, tabWishlist, tabSuggestions].forEach(tab => {
+      if (!tab) return;
+      if (tab === activeTab) {
+        tab.className = 'flex-1 min-w-[65px] py-1.5 rounded-xl font-black text-[11px] sm:text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm';
+      } else {
+        tab.className = 'flex-1 min-w-[65px] py-1.5 rounded-xl font-black text-[11px] sm:text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      }
+    });
+  }
+
   if (tabFoods) {
     tabFoods.onclick = () => {
       audio.playPop();
-      tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm';
-      if (tabPlaces) tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
-      if (tabWishlist) tabWishlist.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      setTabActive(tabFoods);
       if (secFoods) { secFoods.classList.remove('hidden'); secFoods.classList.add('flex'); }
       if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
       if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
+      if (secSuggestions) { secSuggestions.classList.add('hidden'); secSuggestions.classList.remove('flex'); }
     };
   }
 
   if (tabPlaces) {
     tabPlaces.onclick = () => {
       audio.playPop();
-      tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-amber-700 shadow-sm';
-      if (tabFoods) tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
-      if (tabWishlist) tabWishlist.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      setTabActive(tabPlaces);
       if (secPlaces) { secPlaces.classList.remove('hidden'); secPlaces.classList.add('flex'); }
       if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
       if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
+      if (secSuggestions) { secSuggestions.classList.add('hidden'); secSuggestions.classList.remove('flex'); }
       renderPlaceList();
       renderModalPlaceTags();
     };
@@ -2576,17 +2727,28 @@ function initModalTabs() {
   if (tabWishlist) {
     tabWishlist.onclick = () => {
       audio.playPop();
-      tabWishlist.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm';
-      if (tabFoods) tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
-      if (tabPlaces) tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      setTabActive(tabWishlist);
       if (secWishlist) { secWishlist.classList.remove('hidden'); secWishlist.classList.add('flex'); }
       if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
       if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      if (secSuggestions) { secSuggestions.classList.add('hidden'); secSuggestions.classList.remove('flex'); }
       updateModalWishlistStats();
     };
   }
 
-  // Admin Wishlist Buttons (Moved from public view into admin)
+  if (tabSuggestions) {
+    tabSuggestions.onclick = () => {
+      audio.playPop();
+      setTabActive(tabSuggestions);
+      if (secSuggestions) { secSuggestions.classList.remove('hidden'); secSuggestions.classList.add('flex'); }
+      if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
+      if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
+      renderSuggestionsList();
+    };
+  }
+
+  // Admin Wishlist Buttons
   const adminResetBtn = document.getElementById('btn-admin-wishlist-reset');
   const adminClearBtn = document.getElementById('btn-admin-wishlist-clear');
 
@@ -2619,6 +2781,128 @@ function initModalTabs() {
         audio.playMeow();
         showCatToast("Đã xóa toàn bộ sổ tay địa điểm! 🐾", "delete");
       }
+    };
+  }
+
+  // Clear all suggestions button
+  const clearSuggBtn = document.getElementById('btn-clear-all-suggestions');
+  if (clearSuggBtn) {
+    clearSuggBtn.onclick = async () => {
+      if (suggestions.length === 0) {
+        showCatToast("Chưa có gợi ý nào để xóa nha Sen!", "warn");
+        return;
+      }
+      const ok = await showCatConfirm("Sen có chắc muốn <b>xóa toàn bộ</b> danh sách gợi ý từ khách hàng không? 📭", "Xóa Hết Gợi Ý?", "🗑️", "Xóa Tất Cả 🐾");
+      if (ok) {
+        suggestions = [];
+        saveSuggestionsLocally();
+        if (fbDb) {
+          fbDb.ref('suggestions').remove().catch(e => console.warn(e));
+        }
+        renderSuggestionsList();
+        updateSuggestionsTabCount();
+        audio.playMeow();
+        showCatToast("Đã xóa toàn bộ gợi ý món từ khách! 🐾", "delete");
+      }
+    };
+  }
+}
+
+function initSuggestionModal() {
+  const openBtn = document.getElementById('btn-open-suggestion');
+  const closeBtn = document.getElementById('btn-close-suggestion');
+  const cancelBtn = document.getElementById('btn-cancel-suggestion');
+  const modal = document.getElementById('suggestion-modal');
+  const form = document.getElementById('suggestion-form');
+
+  const nameInput = document.getElementById('sugg-food-name');
+  const placeInput = document.getElementById('sugg-food-place');
+  const priceInput = document.getElementById('sugg-food-price');
+  const noteInput = document.getElementById('sugg-food-note');
+  const senderInput = document.getElementById('sugg-sender-name');
+
+  function open() {
+    audio.playPop();
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (window.gsap) {
+        gsap.fromTo('#suggestion-modal > div', { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.25, ease: 'back.out(1.5)' });
+      }
+      setTimeout(() => { if (nameInput) nameInput.focus(); }, 150);
+    }
+  }
+
+  function close() {
+    audio.playPop();
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  if (openBtn) openBtn.onclick = open;
+  if (closeBtn) closeBtn.onclick = close;
+  if (cancelBtn) cancelBtn.onclick = close;
+
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
+  }
+
+  if (form) {
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const foodName = nameInput ? nameInput.value.trim() : '';
+      if (!foodName) {
+        if (nameInput) nameInput.focus();
+        return;
+      }
+
+      const location = placeInput ? placeInput.value.trim() : '';
+      const price = priceInput && priceInput.value ? parseInt(priceInput.value, 10) : 0;
+      const note = noteInput ? noteInput.value.trim() : '';
+      const sender = senderInput ? senderInput.value.trim() : '';
+
+      const now = new Date();
+      const timeStr = now.toLocaleDateString('vi-VN') + ' ' + now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+      const newSugg = {
+        id: Date.now(),
+        foodName: foodName,
+        location: location,
+        price: price,
+        note: note,
+        sender: sender || 'Khách dễ thương',
+        createdAt: timeStr
+      };
+
+      suggestions.unshift(newSugg);
+      saveSuggestionsLocally();
+
+      if (fbDb) {
+        fbDb.ref('suggestions').child(String(newSugg.id)).set(newSugg)
+          .catch(err => console.warn("Firebase save suggestion error:", err));
+      }
+
+      updateSuggestionsTabCount();
+      if (typeof renderSuggestionsList === 'function') {
+        renderSuggestionsList();
+      }
+
+      close();
+      form.reset();
+
+      if (window.confetti) {
+        confetti({
+          particleCount: 60,
+          spread: 70,
+          origin: { y: 0.7 }
+        });
+      }
+      audio.playMeow();
+      showCatToast("Cảm ơn bạn đã gửi gợi ý cho quán! Quán đã nhận được và sẽ xem xét thêm vào thực đơn nhé 💕🐾", "success");
     };
   }
 }
@@ -3601,6 +3885,7 @@ window.addEventListener('DOMContentLoaded', () => {
   loadFoods();
   loadPlaces();
   loadCoupleWishlist();
+  loadSuggestions();
 
   // Initialize Firebase Realtime Cloud Sync (Đồng bộ nhóm 4-5 người)
   initFirebaseSync();
@@ -3617,6 +3902,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initConfirmModal();
   initFoodManager();
   initCoupleWishlist();
+  initSuggestionModal();
   initResultActions();
   setupClawMachine();
   setupSlotMachine();
