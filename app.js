@@ -46,6 +46,46 @@ function setCloudSyncStatus(status, text) {
   }
 }
 
+function showCatToast(message, type = 'success') {
+  let container = document.getElementById('cat-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'cat-toast-container';
+    container.className = 'fixed top-4 right-4 z-[99999] flex flex-col gap-2 pointer-events-none max-w-xs sm:max-w-sm w-full px-2';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  const bgColors = {
+    success: 'bg-emerald-50/95 border-emerald-300 text-emerald-900',
+    delete: 'bg-rose-50/95 border-rose-300 text-rose-900',
+    edit: 'bg-amber-50/95 border-amber-300 text-amber-900',
+    warn: 'bg-orange-50/95 border-orange-300 text-orange-900'
+  };
+  const colorClass = bgColors[type] || bgColors.success;
+  const icon = type === 'delete' ? '🗑️' : (type === 'edit' ? '✏️' : (type === 'warn' ? '⚠️' : '✅'));
+
+  toast.className = `pointer-events-auto p-3 rounded-2xl border-2 shadow-xl backdrop-blur-md flex items-center gap-2.5 text-xs font-black transition-all transform duration-300 translate-y-[-12px] opacity-0 ${colorClass}`;
+  toast.innerHTML = `
+    <span class="text-base flex-shrink-0">${icon}</span>
+    <span class="flex-grow">${message}</span>
+  `;
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove('translate-y-[-12px]', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+  });
+
+  setTimeout(() => {
+    toast.classList.remove('translate-y-0', 'opacity-100');
+    toast.classList.add('translate-y-[-12px]', 'opacity-0');
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 320);
+  }, 3200);
+}
+
 function sanitizeCloudList(val) {
   if (!val) return [];
   let list = [];
@@ -1688,6 +1728,11 @@ function renderModalTagChips(selectedKeys = null) {
 }
 
 function deleteCustomTag(tagKey) {
+  const targetTag = mealTags.find(t => t.key === tagKey);
+  const tagLabel = targetTag ? targetTag.label : tagKey;
+  if (!confirm(`Sen có chắc chắn muốn xóa thẻ tag "${tagLabel}" không? 🏷️`)) {
+    return;
+  }
   mealTags = mealTags.filter(t => t.key !== tagKey);
   saveMealTags();
 
@@ -1710,6 +1755,7 @@ function deleteCustomTag(tagKey) {
   setupClawMachine();
   setupSlotMachine();
   audio.playPop();
+  showCatToast(`Đã xóa thẻ tag "${tagLabel}"!`, 'delete');
 }
 
 function initCustomTagCreator() {
@@ -1743,17 +1789,12 @@ function initCustomTagCreator() {
       return;
     }
 
-    const exists = mealTags.some(t => t.label.toLowerCase() === rawName.toLowerCase());
-    if (exists) {
-      alert("Thẻ tag này đã có trong danh sách rồi nha Sen!");
-      nameInput.focus();
-      return;
-    }
-
+    // Tạo key an toàn không trùng lặp
+    const cleanKey = 'tag_' + Date.now();
     const iconVal = iconSelect.value || '🏷️';
-    const tagKey = 'custom_' + Date.now();
+
     const newTag = {
-      key: tagKey,
+      key: cleanKey,
       label: rawName,
       icon: iconVal,
       isDefault: false
@@ -1764,7 +1805,7 @@ function initCustomTagCreator() {
 
     // Tự động chọn thẻ mới thêm vào món ăn đang tạo
     const currentActive = Array.from(document.querySelectorAll('.modal-tag-chip.active-chip')).map(c => c.getAttribute('data-tag'));
-    currentActive.push(tagKey);
+    currentActive.push(cleanKey);
     renderModalTagChips(currentActive);
 
     // Cập nhật bộ lọc ở màn hình chính
@@ -1775,6 +1816,7 @@ function initCustomTagCreator() {
     addForm.classList.add('hidden');
     addForm.classList.remove('flex');
     audio.playBellDing();
+    showCatToast(`Đã tạo thẻ tag "${newTag.label}" thành công! 🏷️`, 'success');
   };
 
   submitBtn.onclick = handleCreateTag;
@@ -1990,6 +2032,11 @@ function initFoodManager() {
           alert("Hoàng Thượng yêu cầu giữ lại ít nhất 1 món ăn trong thực đơn nha Sen!");
           return;
         }
+        const target = foods.find(f => f.id === id);
+        const foodName = target ? target.name : 'món này';
+        if (!confirm(`Sen có chắc chắn muốn xóa món "${foodName}" khỏi thực đơn không? 😿`)) {
+          return;
+        }
         if (editingFoodId === id) {
           cancelFoodEdit();
         }
@@ -2002,12 +2049,21 @@ function initFoodManager() {
           setupSlotMachine();
         }
         audio.playPop();
+        showCatToast(`Đã xóa món "${foodName}" khỏi thực đơn!`, 'delete');
       };
     });
   }
 
-  openBtn.onclick = () => {
-    audio.playPop();
+  // Password Protection for Management Modal ('liltam')
+  const authModal = document.getElementById('auth-modal');
+  const authForm = document.getElementById('auth-form');
+  const authPasswordInput = document.getElementById('auth-password-input');
+  const authErrorMsg = document.getElementById('auth-error-msg');
+  const btnToggleAuthPwd = document.getElementById('btn-toggle-auth-pwd');
+  const btnAuthCancel = document.getElementById('btn-auth-cancel');
+  const btnLockFoodsModal = document.getElementById('btn-lock-foods-modal');
+
+  function openFoodsModalDirectly() {
     renderList();
     renderModalTagChips();
     renderPlaceList();
@@ -2016,6 +2072,77 @@ function initFoodManager() {
     modal.classList.add('flex');
     if (window.gsap) {
       gsap.fromTo('#foods-modal > div', { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.5)' });
+    }
+  }
+
+  function openAuthModal() {
+    if (authErrorMsg) authErrorMsg.classList.add('hidden');
+    if (authPasswordInput) {
+      authPasswordInput.value = '';
+      authPasswordInput.type = 'password';
+    }
+    if (authModal) {
+      authModal.classList.remove('hidden');
+      authModal.classList.add('flex');
+      if (window.gsap) {
+        gsap.fromTo('#auth-modal > div', { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.25, ease: 'back.out(1.5)' });
+      }
+      setTimeout(() => { if (authPasswordInput) authPasswordInput.focus(); }, 150);
+    }
+  }
+
+  function closeAuthModal() {
+    if (authModal) {
+      authModal.classList.add('hidden');
+      authModal.classList.remove('flex');
+    }
+  }
+
+  if (btnToggleAuthPwd && authPasswordInput) {
+    btnToggleAuthPwd.onclick = () => {
+      authPasswordInput.type = authPasswordInput.type === 'password' ? 'text' : 'password';
+    };
+  }
+
+  if (btnAuthCancel) btnAuthCancel.onclick = closeAuthModal;
+
+  if (authForm) {
+    authForm.onsubmit = (e) => {
+      e.preventDefault();
+      const entered = authPasswordInput ? authPasswordInput.value.trim().toLowerCase() : '';
+      if (entered === 'liltam') {
+        sessionStorage.setItem('liltam_authenticated', 'true');
+        closeAuthModal();
+        audio.playMeow();
+        showCatToast("Chào mừng Lil Tâm đã mở khóa quyền quản trị! 👑", "success");
+        openFoodsModalDirectly();
+      } else {
+        if (authErrorMsg) authErrorMsg.classList.remove('hidden');
+        if (authPasswordInput) authPasswordInput.select();
+        audio.playPop();
+        if (window.gsap) {
+          gsap.fromTo('#auth-modal > div', { x: -8 }, { x: 8, duration: 0.07, repeat: 5, yoyo: true, onComplete: () => gsap.set('#auth-modal > div', { x: 0 }) });
+        }
+      }
+    };
+  }
+
+  if (btnLockFoodsModal) {
+    btnLockFoodsModal.onclick = () => {
+      audio.playPop();
+      sessionStorage.removeItem('liltam_authenticated');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      showCatToast("Đã khóa lại quyền quản trị thực đơn & địa điểm! 🔒", "warn");
+    };
+  }
+
+  openBtn.onclick = () => {
+    audio.playPop();
+    if (sessionStorage.getItem('liltam_authenticated') === 'true') {
+      openFoodsModalDirectly();
+    } else {
+      openAuthModal();
     }
   };
 
@@ -2053,6 +2180,7 @@ function initFoodManager() {
       if (foodFormTitle) foodFormTitle.innerHTML = `<span>➕</span> <span>Thêm món mới vào thực đơn:</span>`;
       if (addBtnText) addBtnText.textContent = 'Thêm Món';
       if (cancelEditFoodBtn) cancelEditFoodBtn.classList.add('hidden');
+      showCatToast(`Đã cập nhật món "${name}" thành công! ✨`, 'edit');
     } else {
       const newFood = {
         id: Date.now(),
@@ -2065,6 +2193,7 @@ function initFoodManager() {
         desc: "Món ăn tuyệt hảo do chính Sen đưa vào thực đơn Hoàng Thượng!"
       };
       foods.unshift(newFood);
+      showCatToast(`Đã thêm món "${name}" vào thực đơn! 🍜`, 'success');
     }
 
     saveFoods();
@@ -2093,6 +2222,7 @@ function initFoodManager() {
         setupSlotMachine();
       }
       audio.playMeow();
+      showCatToast("Đã khôi phục danh sách 36 món ăn ban đầu! 🔄", "edit");
     }
   };
 
@@ -2178,6 +2308,11 @@ function renderPlaceList() {
         alert("Hoàng Thượng yêu cầu giữ lại ít nhất 1 địa điểm để đi chơi nha Sen!");
         return;
       }
+      const target = places.find(p => p.id === id);
+      const placeName = target ? target.name : 'địa điểm này';
+      if (!confirm(`Sen có chắc chắn muốn xóa địa điểm "${placeName}" không? 😿`)) {
+        return;
+      }
       places = places.filter(p => p.id !== id);
       savePlaces();
       renderPlaceList();
@@ -2187,6 +2322,7 @@ function renderPlaceList() {
         setupSlotMachine();
       }
       audio.playPop();
+      showCatToast(`Đã xóa địa điểm "${placeName}"!`, 'delete');
     };
   });
 }
@@ -2264,6 +2400,7 @@ function initPlacesManager() {
         if (titleEl) titleEl.innerHTML = `<span>➕</span> <span>Thêm địa điểm đi chơi mới:</span>`;
         if (addBtnText) addBtnText.textContent = 'Thêm Chỗ Đi';
         if (cancelBtn) cancelBtn.classList.add('hidden');
+        showCatToast(`Đã cập nhật địa điểm "${name}" thành công! ✨`, 'edit');
       } else {
         const newPlace = {
           id: Date.now(),
@@ -2275,6 +2412,7 @@ function initPlacesManager() {
           desc: 'Địa điểm hấp dẫn do chính Sen đưa vào lịch trình vi vu!'
         };
         places.unshift(newPlace);
+        showCatToast(`Đã thêm địa điểm "${name}" đi chơi mới! 🎡`, 'success');
       }
 
       savePlaces();
@@ -2304,6 +2442,7 @@ function initPlacesManager() {
           setupSlotMachine();
         }
         audio.playMeow();
+        showCatToast("Đã khôi phục danh sách địa điểm ban đầu! 🔄", "edit");
       }
     };
   }
@@ -2733,10 +2872,16 @@ function renderCoupleWishlist() {
   tbody.querySelectorAll('.btn-delete-wishlist').forEach(btn => {
     btn.onclick = () => {
       const id = parseInt(btn.getAttribute('data-id'), 10);
+      const target = coupleWishlist.find(i => i.id === id);
+      const itemName = target ? target.name : 'địa điểm này';
+      if (!confirm(`Sen có chắc muốn xóa "${itemName}" khỏi sổ tay không? 💕`)) {
+        return;
+      }
       coupleWishlist = coupleWishlist.filter(i => i.id !== id);
       saveCoupleWishlist();
       renderCoupleWishlist();
       audio.playPop();
+      showCatToast(`Đã xóa "${itemName}" khỏi sổ tay!`, 'delete');
     };
   });
 }
@@ -2790,6 +2935,7 @@ function initCoupleWishlist() {
         if (titleEl) titleEl.innerHTML = `<span>➕</span> <span>Thêm địa điểm / món muốn đến cùng nhau:</span>`;
         if (addBtnText) addBtnText.textContent = 'Thêm';
         if (cancelBtn) cancelBtn.classList.add('hidden');
+        showCatToast(`Đã cập nhật "${name}" thành công! ✨`, 'edit');
       } else {
         const newItem = {
           id: Date.now(),
@@ -2799,6 +2945,7 @@ function initCoupleWishlist() {
           note: note
         };
         coupleWishlist.unshift(newItem);
+        showCatToast(`Đã thêm "${name}" vào sổ tay Lil Tâm & Ttungg! 💖`, 'success');
       }
 
       saveCoupleWishlist();
@@ -2874,6 +3021,7 @@ function initCoupleWishlist() {
         cancelEdit();
         renderCoupleWishlist();
         audio.playMeow();
+        showCatToast("Đã xóa toàn bộ sổ tay địa điểm! 🐾", "delete");
       }
     };
   }
@@ -2887,6 +3035,7 @@ function initCoupleWishlist() {
         cancelEdit();
         renderCoupleWishlist();
         audio.playMeow();
+        showCatToast("Đã khôi phục danh sách địa điểm mẫu! 🔄", "edit");
       }
     };
   }

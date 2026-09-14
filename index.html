@@ -17,9 +17,12 @@
   <!-- SoundCloud Widget API -->
   <script src="https://w.soundcloud.com/player/api.js"></script>
   <!-- Custom CSS with Cache Buster -->
-  <link rel="stylesheet" href="style.css?v=2.9">
+  <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 md:p-5 selection:bg-rose-200">
+
+  <!-- Floating Toast Notifications Container -->
+  <div id="cat-toast-container" class="fixed top-4 right-4 z-[99999] flex flex-col gap-2 pointer-events-none max-w-xs sm:max-w-sm w-full px-2"></div>
 
   <!-- SVG Filter: Removes pitch-black background from Cat GIF seamlessly -->
   <svg class="absolute w-0 h-0 pointer-events-none" style="position: absolute; width: 0; height: 0;" aria-hidden="true">
@@ -784,6 +787,46 @@
     </div>
   </div>
 
+  <!-- ================= MODAL: XÁC THỰC MẬT KHẨU LIL TÂM ================= -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/65 backdrop-blur-md z-[60] hidden items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-5 md:p-6 border-4 border-rose-300 shadow-2xl relative flex flex-col items-center text-center">
+      <!-- Icon Avatar -->
+      <div class="w-16 h-16 -mt-12 rounded-2xl bg-gradient-to-tr from-rose-400 to-pink-400 border-4 border-white shadow-xl flex items-center justify-center text-3xl">
+        🔐
+      </div>
+
+      <h3 class="text-lg md:text-xl font-black text-stone-800 tracking-tight mt-2.5">
+        Mật Khẩu Quản Trị
+      </h3>
+      <p class="text-xs text-stone-500 font-bold mt-1 px-2">
+        Chỉ có <b class="text-rose-600">Lil Tâm</b> mới có quyền thêm, sửa hoặc xóa món ăn & địa điểm đi chơi nha Sen! 🐾
+      </p>
+
+      <!-- Password Input Form -->
+      <form id="auth-form" class="w-full mt-3.5 flex flex-col gap-2.5">
+        <div class="relative w-full">
+          <input id="auth-password-input" type="password" placeholder="Nhập mật khẩu..." autocomplete="off" class="w-full px-4 py-2.5 rounded-2xl text-center text-sm font-black tracking-widest border-2 border-rose-200 focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-200 bg-rose-50/50">
+          <button type="button" id="btn-toggle-auth-pwd" class="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-sm font-bold" title="Hiện mật khẩu">
+            👁️
+          </button>
+        </div>
+        
+        <p id="auth-error-msg" class="hidden text-xs font-black text-rose-600 animate-pulse">
+          ❌ Mật khẩu không đúng rồi Sen ơi! Thử lại nha 🐾
+        </p>
+
+        <div class="flex items-center gap-2 mt-1">
+          <button type="button" id="btn-auth-cancel" class="flex-1 py-2.5 rounded-xl font-extrabold text-xs text-stone-500 bg-stone-100 hover:bg-stone-200 transition-colors">
+            Hủy Bỏ
+          </button>
+          <button type="submit" id="btn-auth-submit" class="flex-1 py-2.5 rounded-xl font-black text-xs text-white bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 shadow-md shadow-rose-200 transition-all">
+            Mở Khóa 💖
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ================= MODAL: QUẢN LÝ THỰC ĐƠN & ĐỊA ĐIỂM ================= -->
   <div id="foods-modal" class="fixed inset-0 bg-black/65 backdrop-blur-md z-50 hidden items-center justify-center p-4">
     <div class="w-full max-w-lg bg-white rounded-3xl p-4 md:p-5 border-4 border-rose-200 shadow-2xl relative flex flex-col max-h-[92vh]">
@@ -797,9 +840,14 @@
             <p id="modal-header-subtitle" class="text-xs text-stone-400 font-bold">Thêm, chỉnh sửa món ăn & địa điểm đi chơi</p>
           </div>
         </div>
-        <button id="btn-close-foods" class="p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-rose-50">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
+        <div class="flex items-center space-x-1.5">
+          <button id="btn-lock-foods-modal" class="px-2 py-1 rounded-xl text-[11px] font-bold text-stone-500 hover:text-rose-600 hover:bg-rose-50 border border-stone-200 flex items-center gap-1 transition-colors" title="Khóa quyền quản trị">
+            <span>🔒</span> <span>Khóa lại</span>
+          </button>
+          <button id="btn-close-foods" class="p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-rose-50">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
       </div>
 
       <!-- Modal Category Tabs: Món Ăn vs Địa Điểm -->
@@ -1048,6 +1096,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
   <!-- Application Script with Cache Buster -->
-  <script src="app.js?v=2.9"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>
