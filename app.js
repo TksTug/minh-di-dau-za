@@ -46,6 +46,28 @@ function setCloudSyncStatus(status, text) {
   }
 }
 
+function sanitizeCloudList(val) {
+  if (!val) return [];
+  let list = [];
+  if (Array.isArray(val)) {
+    list = val;
+  } else if (typeof val === 'object') {
+    list = Object.values(val);
+  }
+  return list.filter(item => item && typeof item === 'object' && item.name && typeof item.name === 'string' && item.name.trim().length > 0);
+}
+
+function sanitizeCloudTags(val) {
+  if (!val) return [];
+  let list = [];
+  if (Array.isArray(val)) {
+    list = val;
+  } else if (typeof val === 'object') {
+    list = Object.values(val);
+  }
+  return list.filter(item => item && typeof item === 'object' && item.key && item.label);
+}
+
 function initFirebaseSync() {
   if (typeof firebase === 'undefined') {
     console.warn("Firebase SDK not detected, running in local storage mode.");
@@ -63,9 +85,10 @@ function initFirebaseSync() {
     // 1. SYNC FOODS
     fbDb.ref('foods').on('value', snapshot => {
       const val = snapshot.val();
-      if (val && Array.isArray(val) && val.length > 0) {
+      const sanitized = sanitizeCloudList(val);
+      if (sanitized.length > 0) {
         isSyncingFromCloud = true;
-        foods = val;
+        foods = sanitized;
         localStorage.setItem('cat_foods_list_v5', JSON.stringify(foods));
         if (appMode === 'food') {
           updateActiveFilterCount();
@@ -75,18 +98,22 @@ function initFirebaseSync() {
           if (badge) badge.textContent = foods.length;
         }
         if (typeof renderFoodList === 'function') renderFoodList();
+        if (typeof window.renderFoodList === 'function') window.renderFoodList();
         isSyncingFromCloud = false;
       } else if (!val) {
-        fbDb.ref('foods').set(foods);
+        if (foods && foods.length > 0) {
+          fbDb.ref('foods').set(foods);
+        }
       }
     });
 
     // 2. SYNC PLACES
     fbDb.ref('places').on('value', snapshot => {
       const val = snapshot.val();
-      if (val && Array.isArray(val) && val.length > 0) {
+      const sanitized = sanitizeCloudList(val);
+      if (sanitized.length > 0) {
         isSyncingFromCloud = true;
-        places = val;
+        places = sanitized;
         localStorage.setItem('cat_places_list_v1', JSON.stringify(places));
         if (appMode === 'place') {
           updateActivePlaceFilterCount();
@@ -98,46 +125,55 @@ function initFirebaseSync() {
         if (typeof renderPlaceList === 'function') renderPlaceList();
         isSyncingFromCloud = false;
       } else if (!val) {
-        fbDb.ref('places').set(places);
+        if (places && places.length > 0) {
+          fbDb.ref('places').set(places);
+        }
       }
     });
 
     // 3. SYNC MEAL TAGS
     fbDb.ref('mealTags').on('value', snapshot => {
       const val = snapshot.val();
-      if (val && Array.isArray(val) && val.length > 0) {
+      const sanitized = sanitizeCloudTags(val);
+      if (sanitized.length > 0) {
         isSyncingFromCloud = true;
-        mealTags = val;
+        mealTags = sanitized;
         localStorage.setItem('cat_custom_tags_v1', JSON.stringify(mealTags));
         if (typeof renderMealFilterButtons === 'function') renderMealFilterButtons();
         if (typeof renderModalTagChips === 'function') renderModalTagChips();
         isSyncingFromCloud = false;
       } else if (!val) {
-        fbDb.ref('mealTags').set(mealTags);
+        if (mealTags && mealTags.length > 0) {
+          fbDb.ref('mealTags').set(mealTags);
+        }
       }
     });
 
     // 4. SYNC PLACE TAGS
     fbDb.ref('placeTags').on('value', snapshot => {
       const val = snapshot.val();
-      if (val && Array.isArray(val) && val.length > 0) {
+      const sanitized = sanitizeCloudTags(val);
+      if (sanitized.length > 0) {
         isSyncingFromCloud = true;
-        placeTags = val;
+        placeTags = sanitized;
         localStorage.setItem('cat_place_tags_v1', JSON.stringify(placeTags));
         if (typeof renderPlaceFilterButtons === 'function') renderPlaceFilterButtons();
         if (typeof renderModalPlaceTags === 'function') renderModalPlaceTags();
         isSyncingFromCloud = false;
       } else if (!val) {
-        fbDb.ref('placeTags').set(placeTags);
+        if (placeTags && placeTags.length > 0) {
+          fbDb.ref('placeTags').set(placeTags);
+        }
       }
     });
 
     // 5. SYNC COUPLE WISHLIST
     fbDb.ref('coupleWishlist').on('value', snapshot => {
       const val = snapshot.val();
-      if (val && Array.isArray(val) && val.length > 0) {
+      const sanitized = sanitizeCloudList(val);
+      if (sanitized.length > 0) {
         isSyncingFromCloud = true;
-        coupleWishlist = val;
+        coupleWishlist = sanitized;
         localStorage.setItem('couple_wishlist_places_v1', JSON.stringify(coupleWishlist));
         if (typeof renderCoupleWishlist === 'function') renderCoupleWishlist();
         if (appMode === 'wishlist') {
@@ -146,7 +182,9 @@ function initFirebaseSync() {
         }
         isSyncingFromCloud = false;
       } else if (!val) {
-        fbDb.ref('coupleWishlist').set(coupleWishlist);
+        if (coupleWishlist && coupleWishlist.length > 0) {
+          fbDb.ref('coupleWishlist').set(coupleWishlist);
+        }
       }
     });
 
@@ -603,8 +641,10 @@ let currentUploadedImageBase64 = null;
 let activeModalTab = 'foods'; // 'foods' | 'places'
 
 function loadFoods() {
+  const oldKeys = ['cat_foods_list_v4', 'cat_foods_list_v3', 'cat_foods_list_v2', 'cat_foods_list'];
   let loadedList = [];
   const savedV5 = localStorage.getItem('cat_foods_list_v5');
+
   if (savedV5) {
     try {
       const parsed = JSON.parse(savedV5);
@@ -614,83 +654,39 @@ function loadFoods() {
     } catch (e) {}
   }
 
-  // If v5 is empty, start with the 36 DEFAULT_FOODS
+  // Only if v5 has never existed on this browser, check if an old key can be migrated once
+  if (loadedList.length === 0) {
+    for (const key of oldKeys) {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        try {
+          const parsedOld = JSON.parse(raw);
+          if (Array.isArray(parsedOld) && parsedOld.length > 0) {
+            loadedList = parsedOld;
+            break;
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
+  // PERMANENTLY PURGE all legacy keys so deleted dishes are NEVER resurrected on reload
+  oldKeys.forEach(key => {
+    try { localStorage.removeItem(key); } catch (e) {}
+  });
+
+  // If still empty, use default foods
   if (loadedList.length === 0) {
     loadedList = JSON.parse(JSON.stringify(DEFAULT_FOODS));
   }
 
-  // RECOVER ALL CUSTOM DISHES & MODIFICATIONS ADDED BY USER FROM PREVIOUS STORAGE KEYS
-  const OLD_DEFAULT_NAMES = [
-    "Phở Bò Tái Lăn", "Trà Sữa Trân Châu Hoàng Kim", "Pizza Phô Mai Ngập Tràn", 
-    "Sushi & Sashimi Cá Hồi", "Gà Rán Giòn Cay KFC", "Burger Bò Phô Mai", 
-    "Cơm Tấm Sườn Bì Chả", "Bún Bò Huế Đặc Biệt", "Bánh Mì Chảo Đặc Biệt", 
-    "Bún Đậu Mắm Tôm Thập Cẩm", "Mì Cay Hải Sản 7 Cấp Độ", "Cơm Gà Xối Mỡ Da Giòn", 
-    "Lẩu Tokbokki Phô Mai Hàn Quốc", "Bánh Tráng Nướng Đà Lạt"
-  ];
-  const oldKeys = ['cat_foods_list_v4', 'cat_foods_list_v3', 'cat_foods_list_v2', 'cat_foods_list'];
-  const recoveredUserFoods = [];
-
-  oldKeys.forEach(key => {
-    const raw = localStorage.getItem(key);
-    if (!raw) return;
-    try {
-      const parsedOld = JSON.parse(raw);
-      if (Array.isArray(parsedOld)) {
-        parsedOld.forEach(oldItem => {
-          if (!oldItem || !oldItem.name) return;
-          const trimmedName = oldItem.name.trim();
-          const isTimestampId = typeof oldItem.id === 'number' && oldItem.id > 1000;
-          const isCustomName = !OLD_DEFAULT_NAMES.includes(trimmedName);
-
-          // 1. If this was a custom user-added dish:
-          if (isTimestampId || isCustomName) {
-            const alreadyInRecovered = recoveredUserFoods.some(r => r.name.toLowerCase() === trimmedName.toLowerCase());
-            const alreadyInLoaded = loadedList.some(f => f.name.toLowerCase() === trimmedName.toLowerCase() && f.id > 1000);
-
-            if (!alreadyInRecovered && !alreadyInLoaded) {
-              recoveredUserFoods.push({
-                id: oldItem.id || Date.now(),
-                name: trimmedName,
-                price: (oldItem.price !== undefined && oldItem.price !== null) ? Number(oldItem.price) : 35000,
-                mealTimes: (oldItem.mealTimes && Array.isArray(oldItem.mealTimes) && oldItem.mealTimes.length > 0) ? oldItem.mealTimes : ['trua'],
-                category: oldItem.category || 'water',
-                icon: oldItem.icon || '🍱',
-                image: oldItem.image || null,
-                desc: oldItem.desc || "Món ăn tuyệt hảo do chính Sen đưa vào thực đơn Hoàng Thượng!"
-              });
-            }
-          } else {
-            // 2. If it was one of the default dishes but the user customized price, tags, or image:
-            const existingItem = loadedList.find(f => f.name.toLowerCase() === trimmedName.toLowerCase());
-            if (existingItem) {
-              if (oldItem.price !== undefined && oldItem.price !== null) {
-                existingItem.price = Number(oldItem.price);
-              }
-              if (oldItem.mealTimes && Array.isArray(oldItem.mealTimes) && oldItem.mealTimes.length > 0) {
-                existingItem.mealTimes = oldItem.mealTimes;
-              }
-              if (oldItem.image) {
-                existingItem.image = oldItem.image;
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {}
-  });
-
-  // Prepend recovered user dishes so they are prominently displayed at the top of the menu!
-  if (recoveredUserFoods.length > 0) {
-    const customNames = recoveredUserFoods.map(r => r.name.toLowerCase());
-    loadedList = loadedList.filter(f => !customNames.includes(f.name.toLowerCase()) || f.id > 1000);
-    loadedList = [...recoveredUserFoods, ...loadedList];
-  }
-
   // Ensure all items have valid prices and mealTimes
-  foods = loadedList.map(f => {
+  foods = loadedList.filter(f => f && typeof f === 'object' && f.name).map(f => {
     const matchedDefault = DEFAULT_FOODS.find(df => df.id === f.id || df.name === f.name);
     return {
       ...f,
+      id: f.id || Date.now() + Math.floor(Math.random() * 1000),
+      name: f.name.trim(),
       price: (f.price !== undefined && f.price !== null) ? Number(f.price) : (matchedDefault ? matchedDefault.price : 35000),
       mealTimes: (f.mealTimes && Array.isArray(f.mealTimes) && f.mealTimes.length) 
         ? f.mealTimes 
@@ -698,14 +694,15 @@ function loadFoods() {
     };
   });
 
-  saveFoods();
+  localStorage.setItem('cat_foods_list_v5', JSON.stringify(foods));
 }
 
 function saveFoods() {
-  localStorage.setItem('cat_foods_list_v5', JSON.stringify(foods));
+  const cleanFoods = foods.filter(f => f && typeof f === 'object' && f.name);
+  localStorage.setItem('cat_foods_list_v5', JSON.stringify(cleanFoods));
   if (fbDb && !isSyncingFromCloud) {
     setCloudSyncStatus('syncing', 'Đang lưu...');
-    fbDb.ref('foods').set(foods)
+    fbDb.ref('foods').set(cleanFoods)
       .then(() => setCloudSyncStatus('connected', 'Đồng bộ nhóm'))
       .catch(e => {
         console.warn('Firebase saveFoods error:', e);
@@ -720,20 +717,21 @@ function loadPlaces() {
     try {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        places = parsed;
+        places = parsed.filter(p => p && typeof p === 'object' && p.name);
         return;
       }
     } catch (e) {}
   }
   places = JSON.parse(JSON.stringify(DEFAULT_PLACES));
-  savePlaces();
+  localStorage.setItem('cat_places_list_v1', JSON.stringify(places));
 }
 
 function savePlaces() {
-  localStorage.setItem('cat_places_list_v1', JSON.stringify(places));
+  const cleanPlaces = places.filter(p => p && typeof p === 'object' && p.name);
+  localStorage.setItem('cat_places_list_v1', JSON.stringify(cleanPlaces));
   if (fbDb && !isSyncingFromCloud) {
     setCloudSyncStatus('syncing', 'Đang lưu...');
-    fbDb.ref('places').set(places)
+    fbDb.ref('places').set(cleanPlaces)
       .then(() => setCloudSyncStatus('connected', 'Đồng bộ nhóm'))
       .catch(e => {
         console.warn('Firebase savePlaces error:', e);
@@ -1905,6 +1903,7 @@ function initFoodManager() {
   if (cancelEditFoodBtn) cancelEditFoodBtn.onclick = cancelFoodEdit;
 
   function renderList() {
+    window.renderFoodList = renderList;
     const badgeCount = document.getElementById('foods-badge-count');
     const modalTabCount = document.getElementById('modal-foods-tab-count');
     if (badgeCount) badgeCount.textContent = foods.length;
@@ -1975,8 +1974,8 @@ function initFoodManager() {
     listContainer.querySelectorAll('.btn-delete-food').forEach(btn => {
       btn.onclick = () => {
         const id = parseInt(btn.getAttribute('data-id'), 10);
-        if (foods.length <= 3) {
-          alert("Hoàng Thượng yêu cầu giữ lại ít nhất 3 món ăn để chọn nha Sen!");
+        if (foods.length <= 1) {
+          alert("Hoàng Thượng yêu cầu giữ lại ít nhất 1 món ăn trong thực đơn nha Sen!");
           return;
         }
         if (editingFoodId === id) {
@@ -2163,8 +2162,8 @@ function renderPlaceList() {
   listContainer.querySelectorAll('.btn-delete-place').forEach(btn => {
     btn.onclick = () => {
       const id = parseInt(btn.getAttribute('data-id'), 10);
-      if (places.length <= 3) {
-        alert("Hoàng Thượng yêu cầu giữ lại ít nhất 3 địa điểm để đi chơi nha Sen!");
+      if (places.length <= 1) {
+        alert("Hoàng Thượng yêu cầu giữ lại ít nhất 1 địa điểm để đi chơi nha Sen!");
         return;
       }
       places = places.filter(p => p.id !== id);
