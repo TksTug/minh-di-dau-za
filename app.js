@@ -2,6 +2,160 @@
 // 🐾 HOÀNG THƯỢNG ĂN GÌ? - 3D KAWAII EDITION
 // ==========================================
 
+// ==========================================
+// ☁️ FIREBASE REALTIME DATABASE (ĐỒNG BỘ NHÓM 4-5 NGƯỜI)
+// ==========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyD9NJ0ZM3L8MTheRuqzTagm5pvy5zYmYwg",
+  authDomain: "minhdidauza.firebaseapp.com",
+  databaseURL: "https://minhdidauza-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "minhdidauza",
+  storageBucket: "minhdidauza.firebasestorage.app",
+  messagingSenderId: "301099532899",
+  appId: "1:301099532899:web:e4451ab261cbeb7e26ee56",
+  measurementId: "G-4KXQM85DXL"
+};
+
+let fbDb = null;
+let isSyncingFromCloud = false;
+
+function setCloudSyncStatus(status, text) {
+  const statusEl = document.getElementById('cloud-sync-status');
+  if (!statusEl) return;
+  if (status === 'connected') {
+    statusEl.className = 'flex items-center gap-1 px-2 md:px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] md:text-xs font-black shadow-xs';
+    statusEl.innerHTML = `
+      <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+      <span>${text || 'Đồng bộ nhóm'}</span>
+    `;
+  } else if (status === 'syncing') {
+    statusEl.className = 'flex items-center gap-1 px-2 md:px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[10px] md:text-xs font-black shadow-xs';
+    statusEl.innerHTML = `
+      <span class="inline-block animate-spin text-[10px]">🔄</span>
+      <span>${text || 'Đang lưu...'}</span>
+    `;
+  } else if (status === 'offline') {
+    statusEl.className = 'flex items-center gap-1 px-2 md:px-2.5 py-1 rounded-xl bg-stone-100 border border-stone-300 text-stone-600 text-[10px] md:text-xs font-bold shadow-xs';
+    statusEl.innerHTML = `
+      <span class="w-2 h-2 rounded-full bg-stone-400"></span>
+      <span>${text || 'Bộ nhớ máy'}</span>
+    `;
+  }
+}
+
+function initFirebaseSync() {
+  if (typeof firebase === 'undefined') {
+    console.warn("Firebase SDK not detected, running in local storage mode.");
+    setCloudSyncStatus('offline', 'Bộ nhớ máy');
+    return;
+  }
+
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    fbDb = firebase.database();
+    setCloudSyncStatus('connected', 'Đồng bộ nhóm');
+
+    // 1. SYNC FOODS
+    fbDb.ref('foods').on('value', snapshot => {
+      const val = snapshot.val();
+      if (val && Array.isArray(val) && val.length > 0) {
+        isSyncingFromCloud = true;
+        foods = val;
+        localStorage.setItem('cat_foods_list_v5', JSON.stringify(foods));
+        if (appMode === 'food') {
+          updateActiveFilterCount();
+          if (typeof renderBallPit === 'function') renderBallPit();
+          if (typeof setupSlotMachine === 'function') setupSlotMachine();
+          const badge = document.getElementById('foods-badge-count');
+          if (badge) badge.textContent = foods.length;
+        }
+        if (typeof renderFoodList === 'function') renderFoodList();
+        isSyncingFromCloud = false;
+      } else if (!val) {
+        fbDb.ref('foods').set(foods);
+      }
+    });
+
+    // 2. SYNC PLACES
+    fbDb.ref('places').on('value', snapshot => {
+      const val = snapshot.val();
+      if (val && Array.isArray(val) && val.length > 0) {
+        isSyncingFromCloud = true;
+        places = val;
+        localStorage.setItem('cat_places_list_v1', JSON.stringify(places));
+        if (appMode === 'place') {
+          updateActivePlaceFilterCount();
+          if (typeof renderBallPit === 'function') renderBallPit();
+          if (typeof setupSlotMachine === 'function') setupSlotMachine();
+          const badge = document.getElementById('foods-badge-count');
+          if (badge) badge.textContent = places.length;
+        }
+        if (typeof renderPlaceList === 'function') renderPlaceList();
+        isSyncingFromCloud = false;
+      } else if (!val) {
+        fbDb.ref('places').set(places);
+      }
+    });
+
+    // 3. SYNC MEAL TAGS
+    fbDb.ref('mealTags').on('value', snapshot => {
+      const val = snapshot.val();
+      if (val && Array.isArray(val) && val.length > 0) {
+        isSyncingFromCloud = true;
+        mealTags = val;
+        localStorage.setItem('cat_custom_tags_v1', JSON.stringify(mealTags));
+        if (typeof renderMealFilterButtons === 'function') renderMealFilterButtons();
+        if (typeof renderModalTagChips === 'function') renderModalTagChips();
+        isSyncingFromCloud = false;
+      } else if (!val) {
+        fbDb.ref('mealTags').set(mealTags);
+      }
+    });
+
+    // 4. SYNC PLACE TAGS
+    fbDb.ref('placeTags').on('value', snapshot => {
+      const val = snapshot.val();
+      if (val && Array.isArray(val) && val.length > 0) {
+        isSyncingFromCloud = true;
+        placeTags = val;
+        localStorage.setItem('cat_place_tags_v1', JSON.stringify(placeTags));
+        if (typeof renderPlaceFilterButtons === 'function') renderPlaceFilterButtons();
+        if (typeof renderModalPlaceTags === 'function') renderModalPlaceTags();
+        isSyncingFromCloud = false;
+      } else if (!val) {
+        fbDb.ref('placeTags').set(placeTags);
+      }
+    });
+
+    // 5. SYNC COUPLE WISHLIST
+    fbDb.ref('coupleWishlist').on('value', snapshot => {
+      const val = snapshot.val();
+      if (val && Array.isArray(val) && val.length > 0) {
+        isSyncingFromCloud = true;
+        coupleWishlist = val;
+        localStorage.setItem('couple_wishlist_places_v1', JSON.stringify(coupleWishlist));
+        if (typeof renderCoupleWishlist === 'function') renderCoupleWishlist();
+        if (appMode === 'wishlist') {
+          const badge = document.getElementById('foods-badge-count');
+          if (badge) badge.textContent = coupleWishlist.length;
+        }
+        isSyncingFromCloud = false;
+      } else if (!val) {
+        fbDb.ref('coupleWishlist').set(coupleWishlist);
+      }
+    });
+
+  } catch (err) {
+    console.warn("Firebase sync error:", err);
+    setCloudSyncStatus('offline', 'Bộ nhớ máy');
+  }
+}
+
 // --- 1. DEFAULT FOODS LIST & MEAL TIME / PRICE HELPERS ---
 const DEFAULT_MEAL_TAGS = [
   { key: 'sang', label: 'Ăn Sáng', icon: '🌅', isDefault: true },
@@ -29,6 +183,9 @@ function loadMealTags() {
 
 function saveMealTags() {
   localStorage.setItem('cat_custom_tags_v1', JSON.stringify(mealTags));
+  if (fbDb && !isSyncingFromCloud) {
+    fbDb.ref('mealTags').set(mealTags).catch(e => console.warn('Firebase saveMealTags error:', e));
+  }
 }
 
 function formatPrice(val) {
@@ -114,6 +271,9 @@ function loadPlaceTags() {
 
 function savePlaceTags() {
   localStorage.setItem('cat_place_tags_v1', JSON.stringify(placeTags));
+  if (fbDb && !isSyncingFromCloud) {
+    fbDb.ref('placeTags').set(placeTags).catch(e => console.warn('Firebase savePlaceTags error:', e));
+  }
 }
 
 function getPlaceTagBadgeHtml(tagKey) {
@@ -543,6 +703,15 @@ function loadFoods() {
 
 function saveFoods() {
   localStorage.setItem('cat_foods_list_v5', JSON.stringify(foods));
+  if (fbDb && !isSyncingFromCloud) {
+    setCloudSyncStatus('syncing', 'Đang lưu...');
+    fbDb.ref('foods').set(foods)
+      .then(() => setCloudSyncStatus('connected', 'Đồng bộ nhóm'))
+      .catch(e => {
+        console.warn('Firebase saveFoods error:', e);
+        setCloudSyncStatus('connected', 'Lưu trên máy');
+      });
+  }
 }
 
 function loadPlaces() {
@@ -562,6 +731,15 @@ function loadPlaces() {
 
 function savePlaces() {
   localStorage.setItem('cat_places_list_v1', JSON.stringify(places));
+  if (fbDb && !isSyncingFromCloud) {
+    setCloudSyncStatus('syncing', 'Đang lưu...');
+    fbDb.ref('places').set(places)
+      .then(() => setCloudSyncStatus('connected', 'Đồng bộ nhóm'))
+      .catch(e => {
+        console.warn('Firebase savePlaces error:', e);
+        setCloudSyncStatus('connected', 'Lưu trên máy');
+      });
+  }
 }
 
 function getFilteredFoods() {
@@ -2363,6 +2541,15 @@ function loadCoupleWishlist() {
 
 function saveCoupleWishlist() {
   localStorage.setItem('couple_wishlist_places_v1', JSON.stringify(coupleWishlist));
+  if (fbDb && !isSyncingFromCloud) {
+    setCloudSyncStatus('syncing', 'Đang lưu...');
+    fbDb.ref('coupleWishlist').set(coupleWishlist)
+      .then(() => setCloudSyncStatus('connected', 'Đồng bộ nhóm'))
+      .catch(e => {
+        console.warn('Firebase saveCoupleWishlist error:', e);
+        setCloudSyncStatus('connected', 'Lưu trên máy');
+      });
+  }
 }
 
 function getFilteredWishlist() {
@@ -3001,6 +3188,9 @@ window.addEventListener('DOMContentLoaded', () => {
   loadFoods();
   loadPlaces();
   loadCoupleWishlist();
+
+  // Initialize Firebase Realtime Cloud Sync (Đồng bộ nhóm 4-5 người)
+  initFirebaseSync();
 
   const badgeCount = document.getElementById('foods-badge-count');
   if (badgeCount) badgeCount.textContent = foods.length;

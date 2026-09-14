@@ -17,7 +17,7 @@
   <!-- SoundCloud Widget API -->
   <script src="https://w.soundcloud.com/player/api.js"></script>
   <!-- Custom CSS with Cache Buster -->
-  <link rel="stylesheet" href="style.css?v=2.5">
+  <link rel="stylesheet" href="style.css?v=2.6">
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 md:p-5 selection:bg-rose-200">
 
@@ -67,6 +67,15 @@
           <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
         </span>
       </button>
+
+      <!-- Cloud Sync Realtime Status Pill -->
+      <div id="cloud-sync-status" class="flex items-center gap-1 px-2 md:px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] md:text-xs font-black shadow-xs" title="Đã kết nối Firebase - Mọi người trong nhóm đều thấy món mới thêm!">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span id="cloud-sync-text">Đồng bộ nhóm</span>
+      </div>
 
       <!-- Manage Items Button -->
       <button id="btn-open-foods" class="btn-jelly px-3 md:px-4 py-2 rounded-xl md:rounded-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-extrabold text-xs flex items-center space-x-1.5 shadow-sm">
@@ -1056,7 +1065,11 @@
           src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F1155470761&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false">
   </iframe>
 
+  <!-- Firebase Realtime Database SDK (Official Google Cloud) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
   <!-- Application Script with Cache Buster -->
-  <script src="app.js?v=2.5"></script>
+  <script src="app.js?v=2.6"></script>
 </body>
 </html>
