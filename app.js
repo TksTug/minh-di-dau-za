@@ -767,39 +767,85 @@ function setupClawMachine() {
   gsap.set(clawArmLeft, { rotation: 10 });
   gsap.set(clawArmRight, { rotation: -10 });
 
+  // Pre-calculated organic 3D mound slots (overlapping and covering each other naturally)
+  const CLAW_PILE_SLOTS = [
+    // Tier 1: Floor row (bottom 2-5px)
+    { left: 1, bottom: 2, z: 8, rot: -4 },
+    { left: 13, bottom: 4, z: 9, rot: 5 },
+    { left: 25, bottom: 1, z: 8, rot: -3 },
+    { left: 37, bottom: 3, z: 9, rot: 4 },
+    { left: 49, bottom: 2, z: 8, rot: -5 },
+    { left: 61, bottom: 4, z: 9, rot: 3 },
+    { left: 73, bottom: 1, z: 8, rot: -2 },
+    { left: 85, bottom: 3, z: 9, rot: 4 },
+
+    // Tier 1.5: Deep crevices (bottom 16-20px)
+    { left: 7, bottom: 18, z: 4, rot: 6 },
+    { left: 19, bottom: 16, z: 5, rot: -5 },
+    { left: 31, bottom: 20, z: 4, rot: 3 },
+    { left: 43, bottom: 17, z: 5, rot: -4 },
+    { left: 55, bottom: 19, z: 4, rot: 5 },
+    { left: 67, bottom: 16, z: 5, rot: -3 },
+    { left: 79, bottom: 18, z: 4, rot: 4 },
+
+    // Tier 2: Front middle layer (bottom 31-36px, z: 18-20)
+    { left: 3, bottom: 32, z: 18, rot: -3 },
+    { left: 15, bottom: 35, z: 19, rot: 4 },
+    { left: 27, bottom: 33, z: 18, rot: -4 },
+    { left: 39, bottom: 36, z: 20, rot: 3 },
+    { left: 51, bottom: 34, z: 19, rot: -5 },
+    { left: 63, bottom: 36, z: 20, rot: 4 },
+    { left: 75, bottom: 33, z: 18, rot: -2 },
+    { left: 86, bottom: 32, z: 17, rot: 5 },
+
+    // Tier 2.5: Mid-high crevices (bottom 48-53px, z: 12-14)
+    { left: 9, bottom: 49, z: 12, rot: 4 },
+    { left: 22, bottom: 52, z: 13, rot: -3 },
+    { left: 35, bottom: 50, z: 12, rot: 5 },
+    { left: 48, bottom: 53, z: 14, rot: -4 },
+    { left: 61, bottom: 51, z: 13, rot: 3 },
+    { left: 74, bottom: 48, z: 12, rot: -5 },
+
+    // Tier 3: Top crest hill mound (bottom 63-70px, z: 24-28)
+    { left: 16, bottom: 64, z: 24, rot: -4 },
+    { left: 29, bottom: 68, z: 26, rot: 3 },
+    { left: 42, bottom: 70, z: 28, rot: -2 },
+    { left: 55, bottom: 67, z: 26, rot: 4 },
+    { left: 68, bottom: 63, z: 24, rot: -3 }
+  ];
+
   // Render natural organic 3D Gashapon pile (supports 100+ dishes gracefully)
   function renderBallPit() {
     ballPit.innerHTML = '';
     const currentList = getActiveItemsOrFallback();
     
-    // Support from few dishes up to 100+ dishes:
-    // Create an organically diverse pool of ~42 display capsules
+    // Support gracefully from few dishes up to 100+ dishes:
+    // Sample items to fill the 34 organic slots
     const displayPool = [];
-    if (currentList.length >= 42) {
-      // If 42-100+ items, randomly sample 42 items for maximum visual variety
+    if (currentList.length >= CLAW_PILE_SLOTS.length) {
       const shuffled = [...currentList].sort(() => 0.5 - Math.random());
-      displayPool.push(...shuffled.slice(0, 42));
+      displayPool.push(...shuffled.slice(0, CLAW_PILE_SLOTS.length));
     } else {
-      // If fewer items, loop to form a lush, full, rounded mound
-      while (displayPool.length < 42) {
+      while (displayPool.length < CLAW_PILE_SLOTS.length) {
         displayPool.push(...currentList);
       }
     }
 
-    displayPool.slice(0, 42).forEach((item, idx) => {
+    CLAW_PILE_SLOTS.forEach((slot, idx) => {
+      const item = displayPool[idx];
+      if (!item) return;
+
       const ball = document.createElement('div');
       ball.className = 'shiny-food-ball';
       
       const grad = BALL_GRADIENTS[idx % BALL_GRADIENTS.length];
       ball.style.background = grad.bg;
       
-      // Natural layer depth and organic tilt
-      const rowNum = Math.floor(idx / 8);
-      ball.style.zIndex = rowNum + 1;
-
-      // Subtle organic tilt (-6deg to +6deg) so it looks like a real tumbled mound, not a rigid grid
-      const rot = ((idx * 13) % 13) - 6;
-      ball.style.transform = `rotate(${rot}deg)`;
+      // Exact organic position & layering
+      ball.style.left = `${slot.left}%`;
+      ball.style.bottom = `${slot.bottom}px`;
+      ball.style.zIndex = slot.z;
+      ball.style.transform = `rotate(${slot.rot}deg)`;
 
       ball.setAttribute('data-food-name', item.name);
       ball.setAttribute('data-food-icon', item.icon || (appMode === 'place' ? '📍' : '🍱'));
@@ -900,7 +946,7 @@ function setupClawMachine() {
 
     // 3. Lower steel cable down into the pit (claws wide open)
     timeline.to(craneCable, {
-      height: 180,
+      height: 165,
       duration: 1.1,
       ease: 'power1.inOut'
     });
