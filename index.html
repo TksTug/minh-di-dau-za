@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="vi" class="custom-paw-cursor">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐾 Hoàng Thượng Ăn Gì? - Vòng Quay Chọn Đồ Ăn Hội Mèo 3D</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mali:wght@500;600;700;800&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- GSAP Animation Engine CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- SoundCloud Widget API -->
+  <script src="https://w.soundcloud.com/player/api.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen flex flex-col justify-between p-2 md:p-5 selection:bg-rose-200">
+
+  <!-- SVG Filter: Removes pitch-black background from Cat GIF seamlessly -->
+  <svg class="absolute w-0 h-0 pointer-events-none" style="position: absolute; width: 0; height: 0;" aria-hidden="true">
+    <defs>
+      <filter id="remove-black-bg" color-interpolation-filters="sRGB" x="0%" y="0%" width="100%" height="100%">
+        <feColorMatrix type="matrix" values="
+          1 0 0 0 0
+          0 1 0 0 0
+          0 0 1 0 0
+          30 30 30 0 -0.35
+        " result="alpha-pass" />
+        <feComposite in="SourceGraphic" in2="alpha-pass" operator="in" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="max-w-4xl mx-auto w-full flex items-center justify-between py-1.5 px-3 md:px-5 bg-white/90 backdrop-blur-lg rounded-2xl md:rounded-3xl border-2 border-rose-200 shadow-md">
+    <!-- Cat Chef Mascot & Title -->
+    <div class="flex items-center space-x-2.5">
+      <div class="relative w-10 h-10 md:w-12 md:h-12 rounded-2xl overflow-hidden cat-gif-frame flex-shrink-0 animate-bob flex items-center justify-center p-0.5">
+        <img src="./assets/gif_meo.gif" onerror="if(!this.triedEnc){this.triedEnc=true;this.src='../gif%20m%C3%A8o.gif';}" alt="Cat Logo" class="w-full h-full object-contain filter-no-black">
+      </div>
+      <div>
+        <h1 class="font-black text-lg md:text-xl text-stone-800 tracking-tight flex items-center gap-1">
+          <span id="header-main-title" class="bg-gradient-to-r from-rose-500 to-amber-500 bg-clip-text text-transparent">Hoàng Thượng Ăn Gì?</span>
+          <span id="header-main-icon" class="text-base md:text-lg inline-block animate-pulse">👑</span>
+        </h1>
+        <p id="header-main-tagline" class="text-[11px] font-bold text-rose-400 leading-tight">Trưa nay ăn gì? Để mèo chọn cho Sen!</p>
+      </div>
+    </div>
+
+    <!-- Actions: Sound Toggle & Menu Manager -->
+    <div class="flex items-center space-x-1.5 md:space-x-2.5">
+      <!-- Sound & BGM Toggle -->
+      <button id="btn-toggle-sound" title="Bật/Tắt âm thanh & Nhạc nền Xổ Số Kiến Thiết" class="relative w-9 h-9 md:w-10 md:h-10 rounded-xl md:rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 transition-all active:scale-90 flex items-center justify-center shadow-xs">
+        <svg id="sound-bell-icon" class="w-4 h-4 md:w-5 md:h-5 text-amber-500 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+        </svg>
+        <span id="sound-mute-slash" class="hidden absolute inset-0 items-center justify-center pointer-events-none">
+          <span class="w-5 h-0.5 bg-rose-500 rotate-45 rounded-full shadow-sm"></span>
+        </span>
+        <span id="bgm-playing-indicator" class="hidden absolute -top-1 -right-1 items-center justify-center pointer-events-none" title="Đang phát nhạc nền">
+          <span class="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-rose-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+        </span>
+      </button>
+
+      <!-- Manage Items Button -->
+      <button id="btn-open-foods" class="btn-jelly px-3 md:px-4 py-2 rounded-xl md:rounded-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-extrabold text-xs flex items-center space-x-1.5 shadow-sm">
+        <span id="header-manage-icon" class="text-sm">📋</span>
+        <span id="header-manage-text">Thực đơn (<span id="foods-badge-count">14</span>)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main class="max-w-4xl mx-auto w-full my-2 md:my-3 flex-grow flex flex-col items-center px-1 sm:px-3">
+
+    <!-- 🎯 PURPOSE SWITCHER: ĂN GÌ? VS ĐI ĐÂU ZA? VS MÌNH ĐI CHỖ NÀY NHA -->
+    <div class="flex items-center p-1 bg-gradient-to-r from-rose-100 via-pink-50 to-amber-100 backdrop-blur-md rounded-2xl border-2 border-rose-300 shadow-xs mb-2.5 flex-wrap gap-1 justify-center">
+      <button id="mode-switch-food" class="px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 bg-rose-500 text-white shadow-sm scale-105">
+        <span class="text-sm md:text-base">🍜</span>
+        <span>Hôm Nay Ăn Gì?</span>
+      </button>
+      <button id="mode-switch-place" class="px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-rose-600 hover:bg-white/60">
+        <span class="text-sm md:text-base">🎡</span>
+        <span>Mình Đi Đâu Za?</span>
+      </button>
+      <button id="mode-switch-wishlist" class="px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-amber-700 hover:bg-white/60">
+        <span class="text-sm md:text-base">📝</span>
+        <span>Mình Đi Chỗ Này Nha!</span>
+      </button>
+    </div>
+
+    <!-- GAME MODE TABS SWITCHER -->
+    <div id="game-tabs-container" class="bg-rose-100/80 p-1 rounded-2xl flex items-center space-x-1 mb-2.5 border border-rose-200 shadow-inner">
+      <button id="tab-claw" class="px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 bg-white text-rose-600 shadow-sm scale-105">
+        <span class="text-base">🐾</span>
+        <span>Máy Gắp Thú Mèo</span>
+      </button>
+      <button id="tab-slot" class="px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-500 hover:bg-rose-50">
+        <span class="text-base">🎰</span>
+        <span>Máy Xèng Đuôi Mèo</span>
+      </button>
+      <button id="tab-omikuji" class="px-3 md:px-5 py-1.5 md:py-2 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-500 hover:bg-rose-50">
+        <span class="text-base">🎴</span>
+        <span id="tab-omikuji-title">Xé Túi Mở Thẻ May Mắn</span>
+      </button>
+    </div>
+
+    <!-- 🏷️ DUAL FILTER BAR: THỜI ĐIỂM ĂN & MỨC GIÁ PHÙ HỢP -->
+    <div id="filter-bar-food" class="w-full max-w-xl bg-white/95 backdrop-blur-md rounded-2xl md:rounded-3xl p-2.5 md:p-3 border-2 border-rose-200 shadow-sm mb-2.5 flex flex-col gap-2">
+      
+      <!-- Tier 1: Thời Điểm Ăn (Meal Time Tags) -->
+      <div class="flex items-center justify-between flex-wrap gap-1.5">
+        <span class="text-[11px] font-black text-rose-600 flex items-center gap-1 flex-shrink-0">
+          <span>⏰</span> THỜI ĐIỂM:
+        </span>
+        <div id="meal-filter-container" class="flex items-center flex-wrap gap-1 md:gap-1.5">
+          <button data-mealtag="all" class="meal-filter-btn active-filter px-3 py-1 rounded-full text-xs font-black transition-all">
+            🌟 Tất cả
+          </button>
+          <button data-mealtag="sang" class="meal-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            🌅 Ăn Sáng
+          </button>
+          <button data-mealtag="trua" class="meal-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            ☀️ Ăn Trưa
+          </button>
+          <button data-mealtag="toi" class="meal-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            🌙 Ăn Tối
+          </button>
+          <button data-mealtag="vat" class="meal-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            🧋 Ăn Vặt / Đồ Ngọt
+          </button>
+          <button data-mealtag="dem" class="meal-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            🦉 Ăn Đêm
+          </button>
+        </div>
+      </div>
+
+      <!-- Tier 2: Mức Giá (Budget / Price Range) -->
+      <div class="flex items-center justify-between flex-wrap gap-1.5 pt-2 border-t border-rose-100">
+        <span class="text-[11px] font-black text-amber-600 flex items-center gap-1 flex-shrink-0">
+          <span>💰</span> MỨC GIÁ:
+        </span>
+        <div class="flex items-center flex-wrap gap-1 md:gap-1.5">
+          <button data-pricerange="all" class="price-filter-btn active-price-filter px-3 py-1 rounded-full text-xs font-black transition-all">
+            ✨ Mọi mức giá
+          </button>
+          <button data-pricerange="under30" class="price-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            🪙 Dưới 30k
+          </button>
+          <button data-pricerange="30to60" class="price-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            💵 30k - 60k
+          </button>
+          <button data-pricerange="over60" class="price-filter-btn px-3 py-1 rounded-full text-xs font-bold transition-all">
+            💎 Trên 60k
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Count Status -->
+      <div class="flex items-center justify-between text-[11px] font-bold text-stone-500 pt-0.5">
+        <span id="filter-status-text">🐾 Đang có <b class="text-rose-600 font-black text-xs" id="filtered-count-num">36</b> món phù hợp để quay</span>
+        <span class="text-[10px] text-rose-500 font-extrabold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 shadow-sm">🎯 100% đúng gu Sen</span>
+      </div>
+
+    </div>
+
+    <!-- 🎡 DUAL FILTER BAR: ĐỊA ĐIỂM ĐI CHƠI (THỂ LOẠI & CHI PHÍ) -->
+    <div id="filter-bar-place" class="hidden w-full max-w-xl bg-white/95 backdrop-blur-md rounded-2xl md:rounded-3xl p-2.5 md:p-3 border-2 border-amber-200 shadow-sm mb-2.5 flex flex-col gap-2">
+      
+      <!-- Tier 1: Thể Loại Đi Chơi -->
+      <div class="flex items-center justify-between flex-wrap gap-1.5">
+        <span class="text-[11px] font-black text-amber-600 flex items-center gap-1 flex-shrink-0">
+          <span>🎯</span> THỂ LOẠI:
+        </span>
+        <div id="place-filter-container" class="flex items-center flex-wrap gap-1 md:gap-1.5">
+          <!-- Dynamic place filter tags -->
+        </div>
+      </div>
+
+      <!-- Tier 2: Mức Chi Phí -->
+      <div class="flex items-center justify-between flex-wrap gap-1.5 pt-2 border-t border-amber-100">
+        <span class="text-[11px] font-black text-rose-600 flex items-center gap-1 flex-shrink-0">
+          <span>💰</span> CHI PHÍ:
+        </span>
+        <div class="flex items-center flex-wrap gap-1 md:gap-1.5">
+          <button data-placecost="all" class="place-cost-btn active-cost-filter px-2.5 py-0.5 rounded-full text-[11px] font-black transition-all">
+            ✨ Mọi mức phí
+          </button>
+          <button data-placecost="free" class="place-cost-btn px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all">
+            🆓 Dưới 30k
+          </button>
+          <button data-placecost="mid" class="place-cost-btn px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all">
+            💵 30k - 100k
+          </button>
+          <button data-placecost="high" class="place-cost-btn px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all">
+            💎 Trên 100k
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Count Status -->
+      <div class="flex items-center justify-between text-[11px] font-bold text-stone-500 pt-0.5">
+        <span id="place-filter-status-text">🐾 Đang có <b class="text-amber-600 font-black text-xs" id="filtered-place-count-num">20</b> địa điểm phù hợp để đi chơi</span>
+        <span class="text-[10px] text-amber-600 font-extrabold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shadow-sm">🚀 Đi quẩy hết mình</span>
+      </div>
+
+    </div>
+
+    <!-- ================= GAME DISPLAY ARENA ================= -->
+    <div id="game-arena-container" class="w-full max-w-xl clay-card p-3 md:p-4 relative flex flex-col items-center">
+
+      <!-- ---------------------------------------------------- -->
+      <!-- VIEW 1: MÁY GẮP THÚ CHÂN MÈO (ARCADE CLAW PIT)       -->
+      <!-- ---------------------------------------------------- -->
+      <div id="view-claw" class="w-full flex flex-col items-center">
+        <!-- Arcade Cabinet Outer Box -->
+        <div class="w-full max-w-md bg-gradient-to-b from-rose-200 via-pink-100 to-rose-200 rounded-3xl p-2.5 border-4 border-rose-300 shadow-2xl relative">
+          
+          <!-- Marquee Header -->
+          <div class="relative w-full bg-gradient-to-r from-pink-500 via-rose-400 to-pink-500 rounded-2xl py-1.5 px-3 border-2 border-white shadow-md flex items-center justify-between mb-2">
+            <div class="absolute -top-5 left-4 w-9 h-8 bg-pink-500 rounded-t-full border-2 border-white flex items-center justify-center">
+              <div class="w-5 h-4 bg-rose-200 rounded-t-full"></div>
+            </div>
+            <div class="absolute -top-5 right-4 w-9 h-8 bg-pink-500 rounded-t-full border-2 border-white flex items-center justify-center">
+              <div class="w-5 h-4 bg-rose-200 rounded-t-full"></div>
+            </div>
+
+            <div class="w-full flex items-center justify-center space-x-2 text-white font-black text-xs md:text-sm tracking-widest filter drop-shadow">
+              <span>✨</span>
+              <span class="bg-white/20 px-3 py-0.5 rounded-full border border-white/50">ARCADE CLAW CRANE 🐾</span>
+              <span>✨</span>
+            </div>
+          </div>
+
+          <!-- Glass Chamber Area (Clear White) -->
+          <div class="claw-arcade-chamber w-full h-72 md:h-80 relative overflow-hidden flex flex-col justify-between bg-white">
+            
+            <!-- Overhead Rail Track -->
+            <div class="claw-rail w-full h-5 relative flex items-center px-2">
+              <div class="w-full h-1 bg-stone-400 rounded"></div>
+            </div>
+
+            <!-- Crane Carriage Assembly with Perfect Claws -->
+            <div id="crane-carriage" class="claw-carriage" style="left: 50%;">
+              <!-- Top Trolley Box -->
+              <div class="w-10 h-3.5 bg-stone-800 rounded border border-stone-500 shadow flex items-center justify-center">
+                <div class="w-4 h-1 bg-rose-400 rounded"></div>
+              </div>
+              
+              <!-- Flexible Steel Cable Line -->
+              <div id="crane-cable" class="claw-steel-cable" style="height: 25px;"></div>
+              
+              <!-- Rock-Solid Symmetrical Claw Rig -->
+              <div class="claw-gripper-rig">
+                <!-- Top Cylinder Hub -->
+                <div class="claw-hub">
+                  <div class="claw-hub-core"></div>
+                </div>
+
+                <!-- Left Arm -->
+                <div id="claw-arm-left" class="claw-prong claw-prong-left">
+                  <svg viewBox="0 0 40 80" class="w-full h-full">
+                    <circle cx="28" cy="8" r="5" fill="#EAEAEA" stroke="#333" stroke-width="1.8" />
+                    <path d="M28,8 Q8,32 10,58 Q11,75 26,75" fill="none" stroke="#D8D8D8" stroke-width="6.5" stroke-linecap="round" />
+                    <path d="M28,8 Q8,32 10,58 Q11,75 26,75" fill="none" stroke="#333" stroke-width="1.5" />
+                    <circle cx="26" cy="75" r="5.5" fill="#FF3B30" stroke="#FFF" stroke-width="1.5" />
+                  </svg>
+                </div>
+
+                <!-- Right Arm -->
+                <div id="claw-arm-right" class="claw-prong claw-prong-right">
+                  <svg viewBox="0 0 40 80" class="w-full h-full">
+                    <circle cx="12" cy="8" r="5" fill="#EAEAEA" stroke="#333" stroke-width="1.8" />
+                    <path d="M12,8 Q32,32 30,58 Q29,75 14,75" fill="none" stroke="#D8D8D8" stroke-width="6.5" stroke-linecap="round" />
+                    <path d="M12,8 Q32,32 30,58 Q29,75 14,75" fill="none" stroke="#333" stroke-width="1.5" />
+                    <circle cx="14" cy="75" r="5.5" fill="#FF3B30" stroke="#FFF" stroke-width="1.5" />
+                  </svg>
+                </div>
+
+                <!-- Held Ball Inside Claws (Supports Image or Emoji) -->
+                <div id="held-claw-ball" class="claw-held-ball hidden">
+                  <div id="held-food-content" class="flex flex-col items-center justify-center w-full h-full">
+                    <span id="held-food-icon" class="text-2xl filter drop-shadow">🍜</span>
+                  </div>
+                  <span id="held-food-label" class="text-[8px] font-black text-white bg-black/50 px-1 py-0.2 rounded-full line-clamp-1 max-w-[44px] text-center z-20 -mt-1">Phở</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Drop Chute Tube on Left Corner -->
+            <div class="claw-chute-tube">
+              <div class="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center text-xs font-black animate-bounce shadow">
+                ▼
+              </div>
+              <span class="text-[9px] font-black text-rose-800 tracking-wider">LỖ RƠI</span>
+            </div>
+
+            <!-- Densely Packed 3D Ball Pit (No Gaps) -->
+            <div id="arcade-ball-pit" class="arcade-ball-pit">
+              <!-- Rendered dynamically by app.js -->
+            </div>
+          </div>
+
+          <!-- Physical Control Panel Bar -->
+          <div class="mt-3 bg-pink-50/90 rounded-2xl p-2.5 border-2 border-rose-200 flex items-center justify-between gap-2 shadow-inner">
+            <!-- Interactive Joystick Trigger (Click to grab!) -->
+            <button id="joystick-trigger" class="flex items-center space-x-3 px-3 py-2 rounded-2xl bg-white hover:bg-rose-100/70 border-2 border-rose-300 hover:border-rose-400 shadow-md hover:shadow-lg transition-all active:scale-95 group focus:outline-none" title="Nhấn vào cần gạt để gắp!">
+              <div class="joystick-base group-hover:scale-105 transition-transform">
+                <div id="joystick-stick" class="joystick-stick">
+                  <div class="joystick-knob group-hover:brightness-110"></div>
+                </div>
+              </div>
+              <div class="flex flex-col text-left">
+                <span class="text-xs sm:text-sm font-black text-rose-600 group-hover:text-rose-700 flex items-center gap-1 leading-tight">
+                  <span>🕹️</span> NHẤN CẦN ĐỂ GẮP!
+                </span>
+                <span class="text-[10px] font-bold text-stone-400">Gạt cần hồng điều khiển</span>
+              </div>
+            </button>
+
+            <!-- 1 Xu Mèo Badge -->
+            <div class="bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg text-center hidden sm:block shadow-sm">
+              <div class="w-6 h-1 bg-stone-700 mx-auto rounded"></div>
+              <span class="text-[9px] font-black text-amber-800 uppercase tracking-wider">1 XU MÈO</span>
+            </div>
+
+            <!-- Desktop Cat GIF Cheer Area (gif mèo.gif) -->
+            <div id="cat-gif-container" class="w-24 h-16 sm:w-28 sm:h-20 cat-gif-frame rounded-2xl p-1 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-all" title="Mèo cưng cổ vũ! Nhấn vào đây cũng gắp được nha">
+              <img id="cat-gif-cheer" src="../gif mèo.gif" onerror="if(!this.triedEnc){this.triedEnc=true;this.src='../gif%20m%C3%A8o.gif';}else{this.src='assets/mascot.jpg';}" alt="Gif Mèo" class="w-full h-full object-contain pointer-events-none select-none filter-no-black">
+            </div>
+          </div>
+        </div>
+
+        <p class="text-[11px] font-bold text-stone-400 mt-2">✨ Càng gắp chuyển động mượt mà, ôm trọn quả bóng món ăn</p>
+      </div>
+
+      <!-- ---------------------------------------------------- -->
+      <!-- VIEW 2: MÁY XÈNG ĐUÔI MÈO (SLOT MACHINE 3D)          -->
+      <!-- ---------------------------------------------------- -->
+      <div id="view-slot" class="w-full flex flex-col items-center hidden">
+        <div class="w-full relative max-w-sm rounded-3xl overflow-hidden shadow-2xl border-4 border-amber-200">
+          <img id="slot-machine-img" src="assets/slot_machine.jpg" alt="3D Cat Slot Machine" class="w-full h-auto object-cover">
+
+          <!-- Live Interactive 3 Reels Overlay -->
+          <div class="absolute top-[37%] left-[21%] right-[32%] h-[23%] grid grid-cols-3 gap-1 bg-stone-900/90 rounded-xl p-1 border-2 border-amber-300 shadow-inner overflow-hidden">
+            <div class="slot-reel-strip h-full bg-amber-50/95 rounded-lg overflow-hidden relative shadow-inner">
+              <div id="slot-reel-1" class="flex flex-col"></div>
+            </div>
+            <div class="slot-reel-strip h-full bg-amber-50/95 rounded-lg overflow-hidden relative shadow-inner">
+              <div id="slot-reel-2" class="flex flex-col"></div>
+            </div>
+            <div class="slot-reel-strip h-full bg-amber-50/95 rounded-lg overflow-hidden relative shadow-inner">
+              <div id="slot-reel-3" class="flex flex-col"></div>
+            </div>
+          </div>
+
+          <button id="slot-tail-trigger" title="Bấm vào đuôi mèo để quay!" class="absolute top-[35%] right-[2%] w-[22%] h-[40%] cursor-pointer z-10 focus:outline-none hover:scale-105 transition-transform" aria-label="Kéo đuôi mèo"></button>
+        </div>
+
+        <div class="w-full max-w-sm mt-4 flex flex-col items-center gap-2">
+          <button id="btn-slot-spin" class="btn-jelly w-full py-4 rounded-3xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white font-black text-lg md:text-xl flex items-center justify-center space-x-2 tracking-wide">
+            <span>🎰 GẠT ĐUÔI QUAY XÈNG!</span>
+          </button>
+          <p class="text-[11px] font-bold text-stone-400">✨ Click vào nút hoặc chạm vào đuôi mèo bông bên hông</p>
+        </div>
+      </div>
+
+      <!-- ---------------------------------------------------- -->
+      <!-- VIEW 3: MÈO THẦN TÀI LẮC QUẺ XĂM (OMIKUJI 3D)        -->
+      <!-- ---------------------------------------------------- -->
+      <!-- ---------------------------------------------------- -->
+      <!-- VIEW 3: BÓC TÚI THẺ POKÉMON MÈO (BOOSTER PACK UNBOX) -->
+      <!-- ---------------------------------------------------- -->
+      <div id="view-omikuji" class="w-full flex flex-col items-center hidden">
+        
+        <!-- Interactive Booster Pack & Card Stage Area -->
+        <div class="w-full max-w-sm h-[440px] md:h-[470px] relative rounded-3xl overflow-hidden shadow-2xl border-4 border-rose-200 bg-gradient-to-b from-indigo-950 via-purple-950 to-rose-950 flex flex-col items-center justify-center p-3 relative select-none">
+          
+          <!-- Atmospheric Sparkles -->
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(251,113,133,0.25)_0%,transparent_70%)] pointer-events-none"></div>
+          <div class="blossom-particle top-3 left-6 text-base">✨</div>
+          <div class="blossom-particle top-10 right-8 text-sm" style="animation-delay: 1.2s;">⭐</div>
+          <div class="blossom-particle bottom-8 left-10 text-sm" style="animation-delay: 2.1s;">✨</div>
+
+          <!-- Light Burst Effect on Tear -->
+          <div id="pack-light-burst" class="absolute w-48 h-48 rounded-full bg-yellow-200 blur-2xl pointer-events-none opacity-0 z-20"></div>
+
+          <!-- 🎴 THE POKÉMON-STYLE FOIL BOOSTER PACK -->
+          <div id="booster-pack" class="booster-pack-wrapper z-10 flex flex-col items-center" title="Bấm vào đây để xé túi!">
+            
+            <!-- TOP TEAR PIECE (Slices diagonally & peels off) -->
+            <div id="pack-top-piece" class="w-full relative z-20 flex flex-col">
+              <!-- Top Crimped Foil Edge -->
+              <div class="foil-crimp foil-crimp-top"></div>
+              
+              <!-- Upper Foil Header -->
+              <div class="booster-pack-face w-full h-10 px-3 flex items-center justify-between">
+                <div class="booster-foil-sheen"></div>
+                <span class="text-[9px] font-black text-white bg-black/50 px-2 py-0.5 rounded-full border border-yellow-300/60 z-10">FOOD TCG</span>
+                <span class="text-[9px] font-black text-yellow-300 z-10 tracking-wider">★ 1 THẺ MÓN ĂN</span>
+              </div>
+
+              <!-- Tear Notch Strip with Scissors -->
+              <div class="booster-tear-strip w-full py-0.5 px-3 flex items-center justify-between text-stone-950 font-black text-[9px] tracking-wider z-10 shadow">
+                <span>✂️ XÉ TÚI TẠI ĐÂY</span>
+                <span class="text-xs">▶▶▶</span>
+              </div>
+            </div>
+
+            <!-- PACK BODY PIECE (Main packet envelope) -->
+            <div id="pack-body-piece" class="booster-pack-face w-full h-72 rounded-b-xl flex flex-col justify-between p-3 relative shadow-2xl">
+              <div class="booster-foil-sheen"></div>
+
+              <!-- Pack Title Banner -->
+              <div class="w-full text-center relative z-10 pt-1">
+                <h3 class="text-base sm:text-lg font-black text-yellow-300 tracking-wider filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] leading-tight">
+                  🐾 BOOSTER PACK 🐾
+                </h3>
+                <p class="text-[9px] font-black text-white tracking-widest uppercase">Thực Đơn Bí Ẩn Series 01</p>
+              </div>
+
+              <!-- Center Cat Mascot Emblem -->
+              <div class="relative z-10 my-auto flex flex-col items-center">
+                <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl p-1 cat-gif-frame shadow-lg flex items-center justify-center border-2 border-white overflow-hidden">
+                  <img src="../gif mèo.gif" onerror="if(!this.triedEnc){this.triedEnc=true;this.src='../gif%20m%C3%A8o.gif';}" alt="Chef Cat" class="w-full h-full object-contain pointer-events-none filter-no-black">
+                </div>
+                <div class="mt-1 bg-yellow-400 text-stone-900 font-black text-[8px] sm:text-[9px] px-2.5 py-0.5 rounded-full shadow border border-white">
+                  ★ CAM KẾT 100% RA MÓN NGON ★
+                </div>
+              </div>
+
+              <!-- Pack Footer & Barcode -->
+              <div class="w-full flex items-center justify-between relative z-10 pt-1 border-t border-white/20 text-white text-[8px] font-mono">
+                <span>NEKO CORP.</span>
+                <div class="h-2.5 w-14 bg-white/80 rounded flex items-center justify-center text-[6px] text-black font-mono">||||||||||||||</div>
+                <span>PACK #01</span>
+              </div>
+
+              <!-- Bottom Crimped Foil Edge -->
+              <div class="foil-crimp foil-crimp-bottom -mx-3 -mb-3"></div>
+            </div>
+
+          </div>
+
+          <!-- 🔮 THE SSR ANIME CARD (Emerging & centered in stage) -->
+          <div id="omikuji-stick" style="position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important; width: 220px !important; height: 330px !important; margin: 0 !important; padding: 0 !important; display: none; z-index: 40 !important; perspective: 1200px !important; pointer-events: auto !important;">
+            
+            <div id="tarot-card-inner" class="tarot-card-flipper" style="position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; transform-style: preserve-3d !important;" title="Bấm vào thẻ để xem chi tiết ngay!">
+              
+              <!-- Tarot Card Back (Seen first when wrapper drops away) -->
+              <div class="tarot-card-back w-full h-full rounded-2xl p-2.5 flex flex-col items-center justify-between border-2 border-amber-300 shadow-2xl overflow-hidden" style="position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; transform: rotateY(180deg) !important; -webkit-backface-visibility: hidden !important; backface-visibility: hidden !important;">
+                <div class="tarot-holo-sheen"></div>
+                <div class="w-full h-full rounded-xl border border-amber-400/50 p-2 flex flex-col items-center justify-between relative z-10 bg-gradient-to-b from-purple-950/85 via-slate-900/90 to-purple-950/85">
+                  <div class="text-[9px] text-amber-300 font-black tracking-widest uppercase flex items-center gap-1">
+                    <span>★</span> NEKO FOOD TCG <span>★</span>
+                  </div>
+
+                  <!-- Center Mystical Orb -->
+                  <div class="my-auto flex flex-col items-center">
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-amber-300/80 shadow-[0_0_20px_rgba(251,191,36,0.6)] flex items-center justify-center bg-gradient-to-br from-amber-400/20 via-purple-900/60 to-rose-600/30 relative">
+                      <span class="text-4xl filter drop-shadow-[0_0_12px_rgba(255,215,0,0.8)]">🐾</span>
+                      <span class="absolute top-1 text-xs text-amber-300">✦</span>
+                      <span class="absolute bottom-1 text-xs text-amber-300">✦</span>
+                      <span class="absolute left-1 text-xs text-amber-300">★</span>
+                      <span class="absolute right-1 text-xs text-amber-300">★</span>
+                    </div>
+                    <span class="text-amber-200 font-black text-[10px] tracking-widest uppercase mt-2">THỰC ĐƠN BÍ ẨN</span>
+                  </div>
+
+                  <div class="text-[8px] text-amber-300/80 font-black tracking-widest">
+                    <span>✧</span> SECRET RARE <span>✧</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tarot Card Face -->
+              <div class="tarot-card-face w-full h-full rounded-2xl p-3 flex flex-col items-center justify-between border-2 border-amber-300 shadow-2xl overflow-hidden" style="position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; transform: rotateY(0deg) !important; -webkit-backface-visibility: hidden !important; backface-visibility: hidden !important;">
+                
+                <!-- Holographic Rainbow Sheen -->
+                <div class="tarot-holo-sheen"></div>
+
+                <!-- Top Arcana Header -->
+                <div class="w-full flex flex-col items-center relative z-10">
+                  <div class="flex items-center justify-between w-full px-1 text-[10px] text-amber-300 font-black tracking-widest">
+                    <span>✦ SSR ✦</span>
+                    <span class="flex items-center gap-0.5 text-[9px] text-amber-400">★★★★★</span>
+                  </div>
+                  <div class="text-[10px] sm:text-xs font-black text-amber-200 uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                    <span>🐾</span> THẺ MÈO TIÊN TRI <span>🐾</span>
+                  </div>
+                  <div class="w-full h-[1px] bg-gradient-to-r from-transparent via-amber-400 to-transparent my-1"></div>
+                </div>
+
+                <!-- Middle Portal / Crest (Food Image or Emoji) -->
+                <div class="relative z-10 my-auto flex flex-col items-center w-full">
+                  <div class="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full p-1 border-2 border-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.6)] flex items-center justify-center bg-gradient-to-br from-amber-400/20 via-purple-900/50 to-amber-600/20">
+                    <div id="tarot-food-img-container" class="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-black/40 border border-amber-200/60 shadow-inner">
+                      <!-- Content dynamically injected -->
+                    </div>
+                    <span class="absolute -top-1.5 left-1/2 -translate-x-1/2 text-xs text-amber-300">✦</span>
+                    <span class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 text-xs text-amber-300">✦</span>
+                    <span class="absolute -left-1.5 top-1/2 -translate-y-1/2 text-xs text-amber-300">★</span>
+                    <span class="absolute -right-1.5 top-1/2 -translate-y-1/2 text-xs text-amber-300">★</span>
+                  </div>
+                  
+                  <h4 id="tarot-food-name" class="mt-2 text-sm sm:text-base font-black text-amber-200 tracking-wider text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] line-clamp-1 px-1">
+                    Tên Món Ăn
+                  </h4>
+                  <!-- Food Price & Meal Tag Badges -->
+                  <div id="tarot-food-meta" class="flex items-center justify-center gap-1 mt-1 flex-wrap">
+                    <span id="tarot-food-price" class="px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-400 text-stone-900 border border-white/80 shadow">45.000đ</span>
+                    <span id="tarot-food-tag" class="px-2 py-0.5 rounded-full text-[8.5px] font-black bg-purple-900/90 text-amber-200 border border-amber-400/50">☀️ Ăn Trưa</span>
+                  </div>
+                </div>
+
+                <!-- Bottom Arcana Prophecy -->
+                <div class="w-full text-center relative z-10 pt-1.5 border-t border-amber-400/30 flex flex-col items-center">
+                  <p id="tarot-fortune-text" class="text-[9px] sm:text-[10px] text-amber-100 font-bold italic leading-tight px-1 text-center">
+                    ✦ Quẻ Thượng Cát: Món này ăn là no say! ✦
+                  </p>
+                  <div class="mt-1 flex items-center justify-center gap-1 text-[8px] text-amber-300/80 font-black tracking-widest">
+                    <span>✧</span> VẬN MỆNH ẨM THỰC <span>✧</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Action Button -->
+        <div class="w-full max-w-sm mt-4 flex flex-col items-center gap-2">
+          <button id="btn-omikuji-shake" class="btn-jelly w-full py-4 rounded-3xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 text-white font-black text-lg md:text-xl flex items-center justify-center space-x-2 tracking-wide shadow-xl">
+            <span id="btn-omikuji-shake-text">✂️ XÉ TÚI MỞ THẺ MÓN ĂN!</span>
+          </button>
+          <p id="omikuji-guide-text" class="text-[11px] font-bold text-stone-400">✨ Bấm nút hoặc chạm vào túi để xé bao nilon và mở thẻ may mắn</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= VIEW 4: SỔ TAY "MÌNH ĐI CHỖ NÀY NHA" (LIL TÂM & TTUNGG) ================= -->
+    <div id="view-couple-wishlist" class="hidden w-full max-w-3xl flex flex-col items-center gap-2.5">
+      
+      <!-- Top Romantic Card Header -->
+      <div class="w-full bg-white/95 backdrop-blur-md rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-5 border-2 border-rose-200 shadow-lg relative overflow-hidden">
+        <div class="absolute -right-6 -bottom-6 text-7xl opacity-10 pointer-events-none select-none">💖</div>
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-100 pb-2.5">
+          <div class="flex items-center gap-2.5">
+            <span class="text-2xl md:text-3xl p-1.5 rounded-xl bg-rose-50 border border-rose-200 shadow-xs">💑</span>
+            <div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="px-2 py-0.2 rounded-full text-[9px] font-black bg-rose-100 text-rose-700 uppercase tracking-wider">Bucket List</span>
+                <span class="text-[11px] font-bold text-stone-400">Không Gacha • Sổ Tay Cặp Đôi</span>
+              </div>
+              <h2 class="text-xs sm:text-sm md:text-base font-black text-[#7A2018] tracking-tight uppercase mt-0.5">
+                DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ CỦA LIL TÂM VÀ TTUNGG
+              </h2>
+            </div>
+          </div>
+
+          <!-- Quick Stats Pills (Compact) -->
+          <div class="flex items-center gap-1 flex-wrap self-start sm:self-auto flex-shrink-0">
+            <span class="px-2 py-0.5 rounded-lg text-[10.5px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+              📍 Tổng: <b id="wishlist-stat-total" class="font-black">0</b>
+            </span>
+            <span class="px-2 py-0.5 rounded-lg text-[10.5px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              ✅ Đã đi: <b id="wishlist-stat-done" class="font-black">0</b>
+            </span>
+            <span class="px-2 py-0.5 rounded-lg text-[10.5px] font-bold bg-rose-50 text-rose-800 border border-rose-200">
+              ⏳ Chưa đi: <b id="wishlist-stat-pending" class="font-black">0</b>
+            </span>
+          </div>
+        </div>
+
+        <!-- Couple Motivational Banner (Compact) -->
+        <div class="mt-2 flex items-center justify-between gap-2 text-[11px] font-bold text-stone-600 bg-rose-50/70 p-2 rounded-xl border border-rose-100">
+          <p id="wishlist-couple-speech" class="flex items-center gap-1 flex-wrap leading-tight">
+            <span>🐾</span> 
+            <span>Cùng nhau đi khắp thế gian! Ghi lại các quán ngon & điểm hẹn hò của hai bạn tại đây nha!</span>
+          </p>
+          <button id="btn-wishlist-copy" class="text-[10px] font-black text-rose-600 hover:text-white bg-white hover:bg-rose-500 border border-rose-200 px-2.5 py-0.5 rounded-lg transition-all shadow-xs flex-shrink-0 flex items-center gap-1">
+            <span>📋</span> Sao chép
+          </button>
+        </div>
+
+        <!-- Add / Edit Form (2-Row Layout: 100% Contained, Never Overflows) -->
+        <div id="wishlist-form-container" class="mt-2.5 p-2.5 sm:p-3 bg-amber-50/60 rounded-xl border border-amber-200 flex flex-col gap-2 w-full overflow-hidden">
+          <div class="flex items-center justify-between">
+            <span id="wishlist-form-title" class="text-xs font-black text-amber-900 flex items-center gap-1.5">
+              <span>➕</span> <span>Thêm địa điểm / món muốn đến cùng nhau:</span>
+            </span>
+            <button id="btn-wishlist-cancel-edit" class="hidden text-[11px] text-stone-600 hover:text-rose-600 font-bold bg-white px-2 py-0.5 rounded-lg border border-stone-200 shadow-xs">
+              ✕ Hủy sửa
+            </button>
+          </div>
+
+          <!-- Row 1: Place Name (Wide & flexible) + Category + Status -->
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 w-full">
+            <div class="flex-1 min-w-0">
+              <input id="wishlist-input-place" type="text" placeholder="Địa chỉ quán hoặc món muốn ăn (VD: Phở Thìn Lò Đúc, Highland Landmark 81...)" class="w-full px-3 py-1.5 rounded-xl text-xs border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white font-semibold">
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <select id="wishlist-select-category" class="px-2 py-1.5 rounded-xl text-xs border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white font-bold text-stone-700">
+                <option value="eat">🍜 Ăn uống</option>
+                <option value="cafe" selected>☕ Cà phê</option>
+                <option value="play">🎡 Đi chơi</option>
+                <option value="snack">🧋 Ăn vặt</option>
+                <option value="movie">🎬 Xem phim</option>
+                <option value="travel">⛺ Dã ngoại</option>
+                <option value="dessert">🍰 Đồ ngọt</option>
+              </select>
+              <select id="wishlist-select-status" class="px-2 py-1.5 rounded-xl text-xs border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white font-bold text-stone-700">
+                <option value="pending" selected>⏳ Chưa đi</option>
+                <option value="planned">💖 Sắp đi</option>
+                <option value="done">✅ Đã đi</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Note (Wide) + Add Button (Firmly inside container, impossible to poke out!) -->
+          <div class="flex items-center gap-1.5 w-full">
+            <div class="flex-1 min-w-0">
+              <input id="wishlist-input-note" type="text" placeholder="Ghi chú (món ruột, lưu ý...)" class="w-full px-3 py-1.5 rounded-xl text-xs border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white font-medium">
+            </div>
+            <button id="btn-wishlist-add" class="btn-jelly px-4 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black text-xs shadow-md flex-shrink-0 flex items-center gap-1 hover:scale-105 active:scale-95 transition-all">
+              <span>➕</span>
+              <span id="btn-wishlist-add-text">Thêm</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Controls (Compact) -->
+        <div class="mt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-rose-100">
+          <!-- Status Filter Tabs -->
+          <div class="flex items-center gap-1 bg-stone-100 p-0.5 rounded-xl flex-wrap">
+            <button data-wishlist-filter="all" class="wishlist-filter-btn active-wishlist-filter px-2.5 py-0.5 rounded-lg text-[11px] font-black transition-all">
+              Tất cả (<span id="wishlist-count-all">0</span>)
+            </button>
+            <button data-wishlist-filter="pending" class="wishlist-filter-btn px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all text-stone-600 hover:text-stone-900">
+              ⏳ Chưa đi (<span id="wishlist-count-pending">0</span>)
+            </button>
+            <button data-wishlist-filter="planned" class="wishlist-filter-btn px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all text-stone-600 hover:text-stone-900">
+              💖 Sắp đi (<span id="wishlist-count-planned">0</span>)
+            </button>
+            <button data-wishlist-filter="done" class="wishlist-filter-btn px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all text-stone-600 hover:text-stone-900">
+              ✅ Đã đi (<span id="wishlist-count-done">0</span>)
+            </button>
+          </div>
+
+          <!-- Search Input & Category Filter -->
+          <div class="flex items-center gap-1 flex-grow sm:max-w-xs">
+            <input id="wishlist-search-input" type="text" placeholder="🔍 Tìm quán, món, ghi chú..." class="w-full px-2.5 py-1 rounded-lg text-xs border border-rose-200 bg-white focus:outline-none focus:ring-1 focus:ring-rose-400">
+            <select id="wishlist-filter-category" class="px-2 py-1 rounded-lg text-xs border border-rose-200 bg-white font-bold text-stone-600">
+              <option value="all">Mọi loại</option>
+              <option value="eat">🍜 Ăn uống</option>
+              <option value="cafe">☕ Cà phê</option>
+              <option value="play">🎡 Đi chơi</option>
+              <option value="snack">🧋 Ăn vặt</option>
+              <option value="movie">🎬 Xem phim</option>
+              <option value="travel">⛺ Dã ngoại</option>
+              <option value="dessert">🍰 Đồ ngọt</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- The Google Sheets / Table Replica with Sticky Header & Inner Scroll -->
+        <div class="mt-2.5 border border-[#7A2018]/30 rounded-xl overflow-hidden shadow-sm max-h-[380px] overflow-y-auto w-full custom-scrollbar">
+          <div class="overflow-x-auto w-full">
+            <table class="w-full text-left border-collapse bg-white">
+              <thead class="sticky top-0 z-10 bg-[#7A2018]">
+                <tr class="bg-[#7A2018] text-white text-[11px] font-black tracking-wide select-none">
+                  <th class="py-2 px-1 text-center border-r border-[#9E3328] w-9">STT</th>
+                  <th class="py-2 px-2.5 border-r border-[#9E3328] min-w-[140px]">Địa chỉ quán hoặc món muốn ăn</th>
+                  <th class="py-2 px-1 text-center border-r border-[#9E3328] w-24">Phân loại</th>
+                  <th class="py-2 px-1 text-center border-r border-[#9E3328] w-24">Trạng thái</th>
+                  <th class="py-2 px-2 border-r border-[#9E3328] min-w-[120px]">Ghi chú</th>
+                  <th class="py-2 px-1 text-center w-16">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="wishlist-table-body" class="text-xs divide-y divide-stone-200">
+                <!-- Rows injected dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Empty Placeholder -->
+        <div id="wishlist-empty-state" class="hidden py-6 flex-col items-center justify-center text-center gap-1.5">
+          <span class="text-3xl">🐾</span>
+          <p class="font-bold text-stone-500 text-xs sm:text-sm">Chưa có địa điểm nào trong mục này!</p>
+          <p class="text-[11px] text-stone-400">Hãy thêm quán ngon hoặc nơi muốn đến ở form phía trên nha Lil Tâm & Ttungg 💕</p>
+        </div>
+
+        <!-- Footer reset -->
+        <div class="mt-2.5 flex items-center justify-between text-[11px] text-stone-400 font-semibold pt-1.5 border-t border-rose-100">
+          <button id="btn-wishlist-reset-default" class="text-rose-500 hover:underline flex items-center gap-1 font-bold">
+            <span>🔄 Khôi phục mẫu</span>
+          </button>
+          <span>Tự động lưu vĩnh viễn trên máy 💾</span>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="max-w-4xl mx-auto w-full text-center py-2 text-stone-400 text-xs font-semibold">
+    <p>Đồ hoạ 3D Kawaii & Bản quyền thuộc về Hội Mèo 🐾 Không còn sợ đau đầu hỏi "Ăn gì?"</p>
+  </footer>
+
+  <!-- ================= MODAL: KẾT QUẢ MÓN ĂN (GACHA CARD 3D) ================= -->
+  <div id="result-modal" class="fixed inset-0 bg-black/65 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div class="food-card-3d w-full max-w-sm rounded-3xl p-6 relative flex flex-col items-center animate-bob">
+      
+      <!-- Top Emperor Seal Badge -->
+      <div class="w-16 h-16 -mt-14 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 border-4 border-white shadow-xl flex items-center justify-center text-3xl">
+        👑
+      </div>
+
+      <!-- Food Display Area: Shows Custom Uploaded Image OR Big Emoji -->
+      <div id="result-media-box" class="my-3 flex items-center justify-center">
+        <!-- Photo Container -->
+        <div id="result-food-img-container" class="hidden w-28 h-28 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-white">
+          <img id="result-food-img" src="" alt="Món ăn" class="w-full h-full object-cover">
+        </div>
+        <!-- Emoji Fallback -->
+        <div id="result-food-icon" class="text-7xl filter drop-shadow-md">
+          🍜
+        </div>
+      </div>
+
+      <!-- Food Name -->
+      <h3 id="result-food-name" class="text-2xl font-black text-stone-800 text-center tracking-tight">
+        Phở Bò Tái Lăn
+      </h3>
+
+      <!-- Price & Meal Tags Pill -->
+      <div id="result-food-meta" class="flex items-center justify-center gap-1.5 mt-1.5 flex-wrap">
+        <span id="result-food-price" class="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-sm flex items-center gap-1">
+          💰 45.000đ
+        </span>
+        <div id="result-food-tags" class="flex items-center gap-1 flex-wrap"></div>
+      </div>
+
+      <!-- 5-Star Rating Tag -->
+      <div class="flex items-center space-x-1 text-amber-400 text-sm mt-1">
+        <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+        <span class="text-xs font-extrabold text-amber-800 ml-1 bg-amber-100 px-2 py-0.5 rounded-full">Cực Phẩm</span>
+      </div>
+
+      <!-- Food Description -->
+      <p id="result-food-desc" class="text-xs font-semibold text-stone-500 text-center mt-2 px-2">
+        Nước dùng ngọt thanh đậm đà từ xương ống, ấm bụng trọn vẹn cả ngày!
+      </p>
+
+      <!-- Cat Emperor Speech Bubble with Animated Cat GIF -->
+      <div class="w-full bg-white/85 rounded-2xl p-3 border-2 border-dashed border-rose-300 my-4 flex items-center gap-3 shadow-inner">
+        <div class="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 cat-gif-frame shadow-sm flex items-center justify-center p-0.5">
+          <img src="./assets/gif_meo.gif" onerror="if(!this.triedEnc){this.triedEnc=true;this.src='../gif%20m%C3%A8o.gif';}" alt="Mèo phán" class="w-full h-full object-contain pointer-events-none filter-no-black">
+        </div>
+        <div class="flex-grow text-left">
+          <p class="text-[10px] font-black text-rose-500 uppercase tracking-wider flex items-center gap-1">
+            <span>🐾</span> LỜI PHÁN CỦA HOÀNG THƯỢNG:
+          </p>
+          <p id="result-cat-speech" class="text-xs font-bold text-stone-700 italic mt-0.5 leading-snug">
+            "Hoàng Thượng đã chuẩn y! Mau đi ăn đi Sen, cấm cãi!"
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="w-full flex flex-col space-y-2.5">
+        <button id="btn-accept-result" class="btn-jelly w-full py-3.5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black text-sm tracking-wide flex items-center justify-center space-x-2">
+          <span id="btn-accept-result-text">💖 Chốt Món Này, Đi Ăn Thôi!</span>
+        </button>
+        <button id="btn-retry-result" class="btn-jelly w-full py-2.5 rounded-2xl bg-white hover:bg-rose-50 text-rose-600 font-bold text-xs border border-rose-200 flex items-center justify-center space-x-1">
+          <span id="btn-retry-result-text">🐾 Sen Chê! Chọn Lại Món Khác</span>
+        </button>
+      </div>
+
+      <!-- Close Button -->
+      <button id="btn-close-result" class="absolute top-3 right-3 text-stone-400 hover:text-stone-700 p-1.5 rounded-full hover:bg-rose-100 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: QUẢN LÝ THỰC ĐƠN & ĐỊA ĐIỂM ================= -->
+  <div id="foods-modal" class="fixed inset-0 bg-black/65 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-white rounded-3xl p-4 md:p-5 border-4 border-rose-200 shadow-2xl relative flex flex-col max-h-[92vh]">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-2.5 border-b border-rose-100">
+        <div class="flex items-center space-x-2">
+          <span id="modal-header-icon" class="text-3xl">📋</span>
+          <div>
+            <h3 id="modal-header-title" class="font-black text-lg text-stone-800">Kho Lựa Chọn Của Sen</h3>
+            <p id="modal-header-subtitle" class="text-xs text-stone-400 font-bold">Thêm, chỉnh sửa món ăn & địa điểm đi chơi</p>
+          </div>
+        </div>
+        <button id="btn-close-foods" class="p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-rose-50">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Modal Category Tabs: Món Ăn vs Địa Điểm -->
+      <div class="flex items-center space-x-1.5 p-1 bg-rose-100/70 rounded-2xl border border-rose-200 mt-2.5 mb-1.5 flex-shrink-0">
+        <button id="modal-tab-foods" class="flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 bg-white text-rose-600 shadow-sm">
+          <span>🍜</span>
+          <span>Món Ăn (<span id="modal-foods-tab-count">36</span>)</span>
+        </button>
+        <button id="modal-tab-places" class="flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 text-stone-500 hover:text-stone-800">
+          <span>🎡</span>
+          <span>Địa Điểm Đi Chơi (<span id="modal-places-tab-count">20</span>)</span>
+        </button>
+      </div>
+
+      <!-- ================= SECTION 1: FOODS MANAGER ================= -->
+      <div id="modal-foods-section" class="flex flex-col flex-grow overflow-hidden">
+        <!-- Add/Edit Food Form -->
+        <div class="my-2 p-3 bg-rose-50/70 rounded-2xl border border-rose-200 flex flex-col gap-2 flex-shrink-0">
+          <div class="flex items-center justify-between">
+            <p id="food-form-title" class="text-xs font-black text-rose-800 flex items-center gap-1">
+              <span>➕</span> <span>Thêm món mới vào thực đơn:</span>
+            </p>
+            <button type="button" id="btn-cancel-edit-food" class="hidden text-xs text-amber-700 bg-amber-100 hover:bg-amber-200 px-2.5 py-1 rounded-lg font-bold transition-all shadow-xs">
+              ✕ Hủy sửa
+            </button>
+          </div>
+          
+          <!-- Row 1: Name & Price -->
+          <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+            <input id="new-food-name" type="text" placeholder="Tên món: Phở bò, Cơm tấm, Trà đào..." class="flex-grow px-3 py-2 rounded-xl text-sm border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-300 bg-white font-semibold">
+            
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-xs font-black text-amber-800 flex items-center gap-0.5">💰 Giá:</span>
+              <input id="new-food-price" type="number" step="1000" min="0" placeholder="35000" value="35000" class="w-28 px-2.5 py-2 rounded-xl text-sm border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white font-black text-stone-800">
+              <span class="text-xs font-bold text-stone-400">đ</span>
+            </div>
+          </div>
+
+          <!-- Quick Price Suggestions -->
+          <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+            <span class="font-bold text-stone-400">Chọn nhanh:</span>
+            <button type="button" class="price-quick-btn px-2 py-0.5 rounded-md text-[10px] font-bold" data-val="20000">20k</button>
+            <button type="button" class="price-quick-btn px-2 py-0.5 rounded-md text-[10px] font-bold" data-val="35000">35k</button>
+            <button type="button" class="price-quick-btn px-2 py-0.5 rounded-md text-[10px] font-bold" data-val="45000">45k</button>
+            <button type="button" class="price-quick-btn px-2 py-0.5 rounded-md text-[10px] font-bold" data-val="60000">60k</button>
+            <button type="button" class="price-quick-btn px-2 py-0.5 rounded-md text-[10px] font-bold" data-val="80000">80k</button>
+            <button type="button" class="price-quick-btn px-2 py-0.5 rounded-md text-[10px] font-bold" data-val="120000">120k</button>
+          </div>
+
+          <!-- Row 2: Category, Icon & Meal Time Tag Chips -->
+          <div class="flex items-center gap-2 flex-wrap">
+            <select id="new-food-category" class="px-2.5 py-2 rounded-xl text-xs border border-rose-200 bg-white text-stone-700 font-bold">
+              <option value="water">🍜 Món nước</option>
+              <option value="rice">🍱 Cơm & Mì</option>
+              <option value="snack">🧋 Ăn vặt / Trà sữa</option>
+              <option value="fast">⚡ Đồ nhanh</option>
+            </select>
+
+            <select id="new-food-icon" class="px-2 py-2 rounded-xl text-lg border border-rose-200 bg-white">
+              <option value="🍜">🍜</option>
+              <option value="🍱">🍱</option>
+              <option value="🍲">🍲</option>
+              <option value="🧋">🧋</option>
+              <option value="🍕">🍕</option>
+              <option value="🍔">🍔</option>
+              <option value="🍣">🍣</option>
+              <option value="🍗">🍗</option>
+              <option value="🍳">🍳</option>
+              <option value="🥩">🥩</option>
+              <option value="🥟">🥟</option>
+              <option value="🥘">🥘</option>
+              <option value="☕">☕</option>
+              <option value="🍦">🍦</option>
+              <option value="🥑">🥑</option>
+              <option value="🥗">🥗</option>
+            </select>
+
+            <!-- Interactive Meal Time Tag Chips with Add Custom Tag Feature -->
+            <div class="flex flex-col gap-1.5 flex-grow">
+              <div class="flex items-center gap-1 flex-wrap">
+                <span class="text-[11px] font-black text-rose-600 flex-shrink-0">Thẻ tag:</span>
+                <div id="modal-tag-chips-list" class="flex items-center gap-1 flex-wrap">
+                  <!-- Dynamic tag chips -->
+                </div>
+                <button type="button" id="btn-show-add-tag" class="px-2 py-1 rounded-lg text-xs font-black text-rose-600 bg-rose-100 hover:bg-rose-200 border border-rose-300 transition-all flex items-center gap-1 shadow-sm">
+                  <span>➕</span>
+                  <span>Thêm tag</span>
+                </button>
+              </div>
+
+              <!-- Inline Mini Form for Creating New Tag -->
+              <div id="new-tag-form" class="hidden items-center gap-1.5 p-1.5 bg-rose-50 border border-rose-300 rounded-xl shadow-inner">
+                <select id="new-tag-icon-select" class="text-xs bg-white border border-rose-200 rounded-lg px-1.5 py-1 font-bold text-stone-700 outline-none">
+                  <option value="🏷️">🏷️ Thẻ</option>
+                  <option value="🥗">🥗 Chay</option>
+                  <option value="🍻">🍻 Nhậu</option>
+                  <option value="🍲">🍲 Nước</option>
+                  <option value="🥑">🥑 Diet</option>
+                  <option value="🧁">🧁 Ngọt</option>
+                  <option value="🌶️">🌶️ Cay</option>
+                  <option value="🍜">🍜 Mì</option>
+                  <option value="🍣">🍣 Nhật</option>
+                  <option value="🥩">🥩 Thịt</option>
+                  <option value="🍱">🍱 Cơm</option>
+                  <option value="🥪">🥪 Nhanh</option>
+                  <option value="☕">☕ Cafe</option>
+                  <option value="🧋">🧋 Trà sữa</option>
+                  <option value="🍦">🍦 Kem</option>
+                  <option value="🍕">🍕 Pizza</option>
+                  <option value="🔥">🔥 Hot</option>
+                </select>
+                <input id="new-tag-name-input" type="text" placeholder="Tên tag (vd: Ăn chay, Healthy...)" maxlength="25" class="px-2 py-1 text-xs border border-rose-200 rounded-lg outline-none focus:border-rose-400 flex-grow font-bold text-stone-800 bg-white">
+                <button type="button" id="btn-submit-new-tag" class="px-2.5 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-black transition-colors flex-shrink-0 shadow-sm">Lưu</button>
+                <button type="button" id="btn-cancel-new-tag" class="px-2 py-1 bg-stone-200 hover:bg-stone-300 text-stone-600 rounded-lg text-xs font-bold transition-colors flex-shrink-0">Đóng</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Specific Image Upload Area -->
+          <div class="flex items-center gap-2 bg-white p-2 rounded-xl border border-rose-200">
+            <div id="new-image-preview-box" class="w-10 h-10 rounded-lg bg-rose-50 border-2 border-dashed border-rose-300 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+              <span id="preview-placeholder-icon" class="text-lg text-rose-300">📷</span>
+              <img id="new-image-preview" src="" alt="Preview" class="w-full h-full object-cover hidden">
+              <button id="btn-remove-new-image" title="Gỡ ảnh" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-black hidden items-center justify-center shadow">×</button>
+            </div>
+
+            <div class="flex-grow flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+              <input type="file" id="new-food-file-input" accept="image/*" class="hidden">
+              <button type="button" id="btn-trigger-upload" class="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 text-xs font-bold flex items-center gap-1 flex-shrink-0 transition-colors">
+                <span>🖼️ Tải ảnh</span>
+              </button>
+              <input id="new-food-img-url" type="url" placeholder="Hoặc dán link ảnh online (https://...)" class="flex-grow px-2 py-1.5 rounded-lg text-xs border border-rose-100 focus:outline-none focus:ring-1 focus:ring-rose-300 bg-rose-50/50">
+            </div>
+
+            <button id="btn-add-food" class="btn-jelly px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-xs flex-shrink-0 shadow-md">
+              Thêm Món
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Food List -->
+        <div id="foods-list-items" class="flex-grow overflow-y-auto space-y-2 pr-1 my-1 max-h-56"></div>
+
+        <!-- Footer Reset Foods -->
+        <div class="pt-2.5 border-t border-rose-100 flex items-center justify-between flex-shrink-0">
+          <button id="btn-reset-default-foods" class="text-xs text-rose-500 hover:underline font-bold flex items-center gap-1">
+            <span>🔄 Khôi phục 36 món gốc</span>
+          </button>
+          <span class="text-[11px] text-stone-400 font-semibold">Tự động lưu trên máy Sen</span>
+        </div>
+      </div>
+
+      <!-- ================= SECTION 2: PLACES MANAGER ================= -->
+      <div id="modal-places-section" class="hidden flex-col flex-grow overflow-hidden">
+        <!-- Add/Edit Place Form -->
+        <div class="my-2 p-3 bg-amber-50/70 rounded-2xl border border-amber-200 flex flex-col gap-2 flex-shrink-0">
+          <div class="flex items-center justify-between">
+            <p id="place-form-title" class="text-xs font-black text-amber-800 flex items-center gap-1">
+              <span>➕</span> <span>Thêm địa điểm đi chơi mới:</span>
+            </p>
+            <button type="button" id="btn-cancel-edit-place" class="hidden text-xs text-rose-700 bg-rose-100 hover:bg-rose-200 px-2.5 py-1 rounded-lg font-bold transition-all shadow-xs">
+              ✕ Hủy sửa
+            </button>
+          </div>
+
+          <!-- Row 1: Name & Cost -->
+          <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+            <input id="new-place-name" type="text" placeholder="Tên chỗ: Cafe Rooftop, Rạp CGV, Đi dạo Hồ Tây..." class="flex-grow px-3 py-2 rounded-xl text-sm border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300 bg-white font-semibold">
+            
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-xs font-black text-amber-800 flex items-center gap-0.5">💰 Phí:</span>
+              <select id="new-place-cost" class="px-2.5 py-2 rounded-xl text-xs border border-amber-300 bg-white font-black text-stone-800">
+                <option value="0">🆓 Miễn phí (0đ)</option>
+                <option value="40000" selected>💵 Dưới 50k (Bình dân)</option>
+                <option value="90000">💳 50k - 100k (Vừa túi)</option>
+                <option value="200000">💎 Trên 100k (Sang chảnh)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Icon, Place Tags & Add Place Button -->
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <select id="new-place-icon" class="px-2 py-2 rounded-xl text-lg border border-amber-200 bg-white">
+                <option value="☕">☕ Cafe</option>
+                <option value="🎬">🎬 Rạp phim</option>
+                <option value="🛍️">🛍️ TTTM</option>
+                <option value="🌳">🌳 Dạo phố</option>
+                <option value="🎳">🎳 Bowling</option>
+                <option value="🎨">🎨 Triển lãm</option>
+                <option value="⛺">⛺ Cắm trại</option>
+                <option value="🍢">🍢 Chợ đêm</option>
+                <option value="🌿">🌿 Công viên</option>
+                <option value="🕹️">🕹️ Arcade</option>
+                <option value="⛵">⛵ Hồ nước</option>
+                <option value="🕯️">🕯️ Workshop</option>
+                <option value="🎤">🎤 Karaoke</option>
+                <option value="🐕">🐕 Cafe thú</option>
+                <option value="🌇">🌇 Tòa nhà cao</option>
+                <option value="⛸️">⛸️ Sân băng</option>
+                <option value="📚">📚 Nhà sách</option>
+                <option value="🏄">🏄 SUP/Chèo</option>
+                <option value="🎡">🎡 Công viên vui chơi</option>
+              </select>
+
+              <!-- Place Tag Chips -->
+              <div class="flex items-center gap-1 flex-wrap">
+                <span class="text-[11px] font-black text-amber-700 flex-shrink-0">Thẻ:</span>
+                <div id="modal-place-tags-list" class="flex items-center gap-1 flex-wrap">
+                  <!-- Dynamic place tags -->
+                </div>
+              </div>
+            </div>
+
+            <button id="btn-add-place" class="btn-jelly px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs flex-shrink-0 shadow-md">
+              Thêm Chỗ Đi
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Places List -->
+        <div id="places-list-items" class="flex-grow overflow-y-auto space-y-2 pr-1 my-1 max-h-56"></div>
+
+        <!-- Footer Reset Places -->
+        <div class="pt-2.5 border-t border-amber-100 flex items-center justify-between flex-shrink-0">
+          <button id="btn-reset-default-places" class="text-xs text-amber-600 hover:underline font-bold flex items-center gap-1">
+            <span>🔄 Khôi phục 20 địa điểm gốc</span>
+          </button>
+          <span class="text-[11px] text-stone-400 font-semibold">Tự động lưu trên máy Sen</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+
+  <!-- Invisible Background Audio: Nhạc Xổ Số Kiến Thiết Miền Bắc Bản Gốc -->
+  <iframe id="sc-bgm-iframe"
+          title="Nhạc Xổ Số Kiến Thiết Miền Bắc"
+          style="position: fixed; bottom: 0; right: 0; width: 100px; height: 100px; opacity: 0.001; pointer-events: none; z-index: -9999;"
+          allow="autoplay"
+          src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F1155470761&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false">
+  </iframe>
+
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
