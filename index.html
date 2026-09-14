@@ -16,8 +16,8 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <!-- SoundCloud Widget API -->
   <script src="https://w.soundcloud.com/player/api.js"></script>
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css">
+  <!-- Custom CSS with Cache Buster -->
+  <link rel="stylesheet" href="style.css?v=2.5">
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 md:p-5 selection:bg-rose-200">
 
@@ -330,9 +330,9 @@
               <span class="text-[9px] font-black text-amber-800 uppercase tracking-wider">1 XU MÈO</span>
             </div>
 
-            <!-- Desktop Cat GIF Cheer Area (gif mèo.gif) -->
+            <!-- Desktop Cat GIF Cheer Area (gif_meo.gif) -->
             <div id="cat-gif-container" class="w-24 h-16 sm:w-28 sm:h-20 cat-gif-frame rounded-2xl p-1 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-all" title="Mèo cưng cổ vũ! Nhấn vào đây cũng gắp được nha">
-              <img id="cat-gif-cheer" src="../gif mèo.gif" onerror="if(!this.triedEnc){this.triedEnc=true;this.src='../gif%20m%C3%A8o.gif';}else{this.src='assets/mascot.jpg';}" alt="Gif Mèo" class="w-full h-full object-contain pointer-events-none select-none filter-no-black">
+              <img id="cat-gif-cheer" src="./assets/gif_meo.gif" onerror="if(!this.triedEnc){this.triedEnc=true;this.src='../gif%20m%C3%A8o.gif';}else{this.src='assets/mascot.jpg';}" alt="Gif Mèo" class="w-full h-full object-contain pointer-events-none select-none filter-no-black">
             </div>
           </div>
         </div>
@@ -1056,7 +1056,7 @@
           src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F1155470761&auto_play=true&hide_related=true&show_comments=false&show_user=false&show_reposts=false&show_teaser=false&visual=false">
   </iframe>
 
-  <!-- Application Script -->
-  <script src="app.js"></script>
+  <!-- Application Script with Cache Buster -->
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>
