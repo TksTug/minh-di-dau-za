@@ -170,6 +170,18 @@ function initFirebaseSync() {
     // 5. SYNC COUPLE WISHLIST
     fbDb.ref('coupleWishlist').on('value', snapshot => {
       const val = snapshot.val();
+      if (val && val.__empty) {
+        isSyncingFromCloud = true;
+        coupleWishlist = [];
+        localStorage.setItem('couple_wishlist_places_v1', JSON.stringify([]));
+        if (typeof renderCoupleWishlist === 'function') renderCoupleWishlist();
+        if (appMode === 'wishlist') {
+          const badge = document.getElementById('foods-badge-count');
+          if (badge) badge.textContent = 0;
+        }
+        isSyncingFromCloud = false;
+        return;
+      }
       const sanitized = sanitizeCloudList(val);
       if (sanitized.length > 0) {
         isSyncingFromCloud = true;
@@ -2525,24 +2537,26 @@ const WISHLIST_STATUSES = {
 
 function loadCoupleWishlist() {
   const saved = localStorage.getItem('couple_wishlist_places_v1');
-  if (saved) {
+  if (saved !== null) {
     try {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        coupleWishlist = parsed;
+      if (Array.isArray(parsed)) {
+        coupleWishlist = parsed.filter(i => i && typeof i === 'object' && i.name);
         return;
       }
     } catch (e) {}
   }
   coupleWishlist = JSON.parse(JSON.stringify(DEFAULT_COUPLE_WISHLIST));
-  saveCoupleWishlist();
+  localStorage.setItem('couple_wishlist_places_v1', JSON.stringify(coupleWishlist));
 }
 
 function saveCoupleWishlist() {
-  localStorage.setItem('couple_wishlist_places_v1', JSON.stringify(coupleWishlist));
+  const cleanList = coupleWishlist.filter(i => i && typeof i === 'object' && i.name);
+  localStorage.setItem('couple_wishlist_places_v1', JSON.stringify(cleanList));
   if (fbDb && !isSyncingFromCloud) {
     setCloudSyncStatus('syncing', 'Đang lưu...');
-    fbDb.ref('coupleWishlist').set(coupleWishlist)
+    const dataToSave = cleanList.length === 0 ? { __empty: true, updatedAt: Date.now() } : cleanList;
+    fbDb.ref('coupleWishlist').set(dataToSave)
       .then(() => setCloudSyncStatus('connected', 'Đồng bộ nhóm'))
       .catch(e => {
         console.warn('Firebase saveCoupleWishlist error:', e);
@@ -2648,10 +2662,10 @@ function renderCoupleWishlist() {
       <td class="py-1.5 px-1 text-center">
         <div class="flex items-center justify-center space-x-1">
           <button data-id="${item.id}" class="btn-edit-wishlist w-6 h-6 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 flex items-center justify-center transition-colors" title="Sửa dòng này">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            <svg class="w-3 h-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
           </button>
           <button data-id="${item.id}" class="btn-delete-wishlist w-6 h-6 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 flex items-center justify-center transition-colors" title="Xóa dòng này">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            <svg class="w-3 h-3 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
           </button>
         </div>
       </td>
@@ -2843,6 +2857,24 @@ function initCoupleWishlist() {
     categoryFilter.onchange = () => {
       currentWishlistCategory = categoryFilter.value;
       renderCoupleWishlist();
+    };
+  }
+
+  // Clear all
+  const clearAllBtn = document.getElementById('btn-wishlist-clear-all');
+  if (clearAllBtn) {
+    clearAllBtn.onclick = () => {
+      if (coupleWishlist.length === 0) {
+        alert("Bảng đang trống rồi nha Sen!");
+        return;
+      }
+      if (confirm("Sen có chắc muốn xóa toàn bộ danh sách địa điểm này không?")) {
+        coupleWishlist = [];
+        saveCoupleWishlist();
+        cancelEdit();
+        renderCoupleWishlist();
+        audio.playMeow();
+      }
     };
   }
 

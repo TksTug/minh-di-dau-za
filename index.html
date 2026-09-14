@@ -17,7 +17,7 @@
   <!-- SoundCloud Widget API -->
   <script src="https://w.soundcloud.com/player/api.js"></script>
   <!-- Custom CSS with Cache Buster -->
-  <link rel="stylesheet" href="style.css?v=2.8">
+  <link rel="stylesheet" href="style.css?v=2.9">
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 md:p-5 selection:bg-rose-200">
 
@@ -687,8 +687,11 @@
           <p class="text-[11px] text-stone-400">Hãy thêm quán ngon hoặc nơi muốn đến ở form phía trên nha Lil Tâm & Ttungg 💕</p>
         </div>
 
-        <!-- Footer reset -->
+        <!-- Footer reset & clear -->
         <div class="mt-2.5 flex items-center justify-between text-[11px] text-stone-400 font-semibold pt-1.5 border-t border-rose-100">
+          <button id="btn-wishlist-clear-all" class="text-stone-500 hover:text-rose-600 hover:underline flex items-center gap-1 font-bold transition-colors">
+            <span>🗑️ Xóa tất cả</span>
+          </button>
           <button id="btn-wishlist-reset-default" class="text-rose-500 hover:underline flex items-center gap-1 font-bold">
             <span>🔄 Khôi phục mẫu</span>
           </button>
@@ -1045,6 +1048,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
   <!-- Application Script with Cache Buster -->
-  <script src="app.js?v=2.8"></script>
+  <script src="app.js?v=2.9"></script>
 </body>
 </html>
