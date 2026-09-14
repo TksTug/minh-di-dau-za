@@ -86,6 +86,77 @@ function showCatToast(message, type = 'success') {
   }, 3200);
 }
 
+// Custom Kawaii Confirmation Dialog (replaces harsh browser confirm())
+let confirmResolve = null;
+
+function showCatConfirm(message, title = "Xác Nhận Xóa?", icon = "🗑️", okText = "Xác Nhận 🐾") {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirm-modal');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const descEl = document.getElementById('confirm-modal-desc');
+    const iconEl = document.getElementById('confirm-modal-icon');
+    const okBtn = document.getElementById('btn-confirm-ok');
+
+    if (!modal) {
+      resolve(window.confirm(message));
+      return;
+    }
+
+    confirmResolve = resolve;
+
+    if (titleEl) titleEl.textContent = title;
+    if (descEl) descEl.innerHTML = message;
+    if (iconEl) iconEl.textContent = icon;
+    if (okBtn) okBtn.textContent = okText;
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    if (window.gsap) {
+      gsap.fromTo('#confirm-modal > div', { scale: 0.85, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.25, ease: 'back.out(1.5)' });
+    }
+  });
+}
+
+function initConfirmModal() {
+  const modal = document.getElementById('confirm-modal');
+  const okBtn = document.getElementById('btn-confirm-ok');
+  const cancelBtn = document.getElementById('btn-confirm-cancel');
+
+  function close(result) {
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    if (confirmResolve) {
+      const res = confirmResolve;
+      confirmResolve = null;
+      res(result);
+    }
+  }
+
+  if (okBtn) {
+    okBtn.onclick = () => {
+      audio.playPop();
+      close(true);
+    };
+  }
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      audio.playPop();
+      close(false);
+    };
+  }
+
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        close(false);
+      }
+    });
+  }
+}
+
 function sanitizeCloudList(val) {
   if (!val) return [];
   let list = [];
@@ -1714,9 +1785,7 @@ function renderModalTagChips(selectedKeys = null) {
     chip.onclick = (e) => {
       if (e.target.classList.contains('btn-delete-tag')) {
         e.stopPropagation();
-        if (confirm(`Sen có chắc muốn xóa thẻ tag "${t.label}" không?`)) {
-          deleteCustomTag(t.key);
-        }
+        deleteCustomTag(t.key);
         return;
       }
       audio.playPop();
@@ -1727,10 +1796,11 @@ function renderModalTagChips(selectedKeys = null) {
   });
 }
 
-function deleteCustomTag(tagKey) {
+async function deleteCustomTag(tagKey) {
   const targetTag = mealTags.find(t => t.key === tagKey);
   const tagLabel = targetTag ? targetTag.label : tagKey;
-  if (!confirm(`Sen có chắc chắn muốn xóa thẻ tag "${tagLabel}" không? 🏷️`)) {
+  const ok = await showCatConfirm(`Sen có chắc chắn muốn xóa thẻ tag "<b>${tagLabel}</b>" không? 🏷️`, "Xóa Thẻ Tag?", "🏷️", "Xóa Tag 🐾");
+  if (!ok) {
     return;
   }
   mealTags = mealTags.filter(t => t.key !== tagKey);
@@ -2026,15 +2096,16 @@ function initFoodManager() {
 
     // Wire delete food buttons
     listContainer.querySelectorAll('.btn-delete-food').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const id = parseInt(btn.getAttribute('data-id'), 10);
         if (foods.length <= 1) {
-          alert("Hoàng Thượng yêu cầu giữ lại ít nhất 1 món ăn trong thực đơn nha Sen!");
+          showCatToast("Hoàng Thượng yêu cầu giữ lại ít nhất 1 món ăn trong thực đơn nha Sen!", "warn");
           return;
         }
         const target = foods.find(f => f.id === id);
         const foodName = target ? target.name : 'món này';
-        if (!confirm(`Sen có chắc chắn muốn xóa món "${foodName}" khỏi thực đơn không? 😿`)) {
+        const ok = await showCatConfirm(`Sen có chắc chắn muốn xóa món "<b>${foodName}</b>" khỏi thực đơn không? 😿`, "Xác Nhận Xóa Món?", "🍜", "Xóa Món 🐾");
+        if (!ok) {
           return;
         }
         if (editingFoodId === id) {
@@ -2209,8 +2280,9 @@ function initFoodManager() {
     audio.playBellDing();
   };
 
-  resetBtn.onclick = () => {
-    if (confirm("Sen có chắc muốn khôi phục về danh sách 36 món ăn và đồ uống ban đầu không?")) {
+  resetBtn.onclick = async () => {
+    const ok = await showCatConfirm("Sen có chắc muốn khôi phục về danh sách <b>36 món ăn và đồ uống</b> ban đầu không?", "Khôi Phục Thực Đơn?", "🔄", "Khôi Phục 🐾");
+    if (ok) {
       foods = JSON.parse(JSON.stringify(DEFAULT_FOODS));
       saveFoods();
       cancelFoodEdit();
@@ -2302,15 +2374,16 @@ function renderPlaceList() {
 
   // Wire delete place buttons
   listContainer.querySelectorAll('.btn-delete-place').forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const id = parseInt(btn.getAttribute('data-id'), 10);
       if (places.length <= 1) {
-        alert("Hoàng Thượng yêu cầu giữ lại ít nhất 1 địa điểm để đi chơi nha Sen!");
+        showCatToast("Hoàng Thượng yêu cầu giữ lại ít nhất 1 địa điểm để đi chơi nha Sen!", "warn");
         return;
       }
       const target = places.find(p => p.id === id);
       const placeName = target ? target.name : 'địa điểm này';
-      if (!confirm(`Sen có chắc chắn muốn xóa địa điểm "${placeName}" không? 😿`)) {
+      const ok = await showCatConfirm(`Sen có chắc chắn muốn xóa địa điểm "<b>${placeName}</b>" không? 😿`, "Xác Nhận Xóa Chỗ Đi?", "🎡", "Xóa Địa Điểm 🐾");
+      if (!ok) {
         return;
       }
       places = places.filter(p => p.id !== id);
@@ -2429,8 +2502,9 @@ function initPlacesManager() {
   }
 
   if (resetBtn) {
-    resetBtn.onclick = () => {
-      if (confirm("Sen có chắc muốn khôi phục về danh sách 20 địa điểm gốc không?")) {
+    resetBtn.onclick = async () => {
+      const ok = await showCatConfirm("Sen có chắc muốn khôi phục về danh sách <b>20 địa điểm gốc</b> không?", "Khôi Phục Địa Điểm?", "🔄", "Khôi Phục 🐾");
+      if (ok) {
         places = JSON.parse(JSON.stringify(DEFAULT_PLACES));
         savePlaces();
         cancelPlaceEdit();
@@ -2870,11 +2944,12 @@ function renderCoupleWishlist() {
 
   // Wire delete row
   tbody.querySelectorAll('.btn-delete-wishlist').forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = async () => {
       const id = parseInt(btn.getAttribute('data-id'), 10);
       const target = coupleWishlist.find(i => i.id === id);
       const itemName = target ? target.name : 'địa điểm này';
-      if (!confirm(`Sen có chắc muốn xóa "${itemName}" khỏi sổ tay không? 💕`)) {
+      const ok = await showCatConfirm(`Sen có chắc muốn xóa "<b>${itemName}</b>" khỏi sổ tay không? 💕`, "Xóa Khỏi Sổ Tay?", "🗑️", "Xóa Ngay 🐾");
+      if (!ok) {
         return;
       }
       coupleWishlist = coupleWishlist.filter(i => i.id !== id);
@@ -3010,12 +3085,13 @@ function initCoupleWishlist() {
   // Clear all
   const clearAllBtn = document.getElementById('btn-wishlist-clear-all');
   if (clearAllBtn) {
-    clearAllBtn.onclick = () => {
+    clearAllBtn.onclick = async () => {
       if (coupleWishlist.length === 0) {
-        alert("Bảng đang trống rồi nha Sen!");
+        showCatToast("Bảng đang trống rồi nha Sen!", "warn");
         return;
       }
-      if (confirm("Sen có chắc muốn xóa toàn bộ danh sách địa điểm này không?")) {
+      const ok = await showCatConfirm("Sen có chắc muốn <b>xóa toàn bộ</b> danh sách địa điểm trong sổ tay không? 😿", "Xóa Hết Sổ Tay?", "🗑️", "Xóa Tất Cả 🐾");
+      if (ok) {
         coupleWishlist = [];
         saveCoupleWishlist();
         cancelEdit();
@@ -3028,8 +3104,9 @@ function initCoupleWishlist() {
 
   // Reset default
   if (resetBtn) {
-    resetBtn.onclick = () => {
-      if (confirm("Sen có chắc muốn khôi phục danh sách địa điểm mẫu ban đầu của Lil Tâm và Ttungg không?")) {
+    resetBtn.onclick = async () => {
+      const ok = await showCatConfirm("Sen có chắc muốn khôi phục danh sách địa điểm mẫu ban đầu của <b>Lil Tâm & Ttungg</b> không? 💕", "Khôi Phục Mẫu?", "🔄", "Khôi Phục 🐾");
+      if (ok) {
         coupleWishlist = JSON.parse(JSON.stringify(DEFAULT_COUPLE_WISHLIST));
         saveCoupleWishlist();
         cancelEdit();
@@ -3381,6 +3458,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initPlaceFilters();
   initModeSwitcher();
   initSoundToggle();
+  initConfirmModal();
   initFoodManager();
   initCoupleWishlist();
   initResultActions();
