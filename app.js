@@ -3130,6 +3130,28 @@ function updateAdminBranding() {
       : '🐾 Hoàng Thượng Ăn Gì? • Sổ Tay Đi Chơi & Khám Phá ✨';
   }
 
+  // Wishlist Admin Controls & Form Visibility
+  const formContainer = document.getElementById('wishlist-form-container');
+  const adminBar = document.getElementById('wishlist-admin-bar');
+  const loginHint = document.getElementById('wishlist-public-login-hint');
+  const thActions = document.getElementById('wishlist-th-actions');
+
+  if (adminBar) {
+    adminBar.classList.toggle('hidden', !isAdmin);
+    adminBar.classList.toggle('flex', isAdmin);
+  }
+  if (loginHint) {
+    loginHint.classList.toggle('hidden', isAdmin);
+    loginHint.classList.toggle('flex', !isAdmin);
+  }
+  if (formContainer) {
+    formContainer.classList.toggle('hidden', !isAdmin);
+    formContainer.classList.toggle('flex', isAdmin);
+  }
+  if (thActions) {
+    thActions.classList.toggle('hidden', !isAdmin);
+  }
+
   if (typeof updateWishlistStats === 'function') {
     updateWishlistStats();
   }
@@ -3250,6 +3272,12 @@ function renderCoupleWishlist() {
   const emptyState = document.getElementById('wishlist-empty-state');
   if (!tbody) return;
 
+  const isAdmin = isLilTamAdmin();
+  const thActions = document.getElementById('wishlist-th-actions');
+  if (thActions) {
+    thActions.classList.toggle('hidden', !isAdmin);
+  }
+
   updateWishlistStats();
   const filtered = getFilteredWishlist();
 
@@ -3269,22 +3297,17 @@ function renderCoupleWishlist() {
     const catInfo = WISHLIST_CATEGORIES[item.category] || WISHLIST_CATEGORIES.cafe;
     const statusInfo = WISHLIST_STATUSES[item.status] || WISHLIST_STATUSES.pending;
 
-    tr.innerHTML = `
-      <td class="py-1.5 px-1 text-center border-r border-stone-200 font-extrabold text-stone-500 text-[11px]">${index + 1}</td>
-      <td class="py-1.5 px-2.5 border-r border-stone-200">
-        <span class="font-extrabold text-stone-800 text-xs ${item.status === 'done' ? 'line-through text-stone-400' : ''}">${escapeHtml(item.name)}</span>
-      </td>
-      <td class="py-1.5 px-1 text-center border-r border-stone-200">
-        <span class="category-badge ${catInfo.class}">${catInfo.icon} ${catInfo.label}</span>
-      </td>
-      <td class="py-1.5 px-1 text-center border-r border-stone-200">
-        <button data-id="${item.id}" class="btn-toggle-wishlist-status wishlist-status-pill px-2 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${statusInfo.class}" title="Nhấp để đổi trạng thái">
+    const statusColHtml = isAdmin
+      ? `<button data-id="${item.id}" class="btn-toggle-wishlist-status wishlist-status-pill px-2 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${statusInfo.class}" title="Nhấp để đổi trạng thái">
           ${statusInfo.icon} ${statusInfo.label}
-        </button>
-      </td>
-      <td class="py-1.5 px-2 border-r border-stone-200 text-stone-600 text-xs italic">
-        ${item.note ? escapeHtml(item.note) : '<span class="text-stone-300 font-normal">Chưa có</span>'}
-      </td>
+        </button>`
+      : `<span class="wishlist-status-pill px-2 py-0.5 rounded-full text-[10px] font-black inline-flex items-center gap-1 ${statusInfo.class} cursor-default select-none">
+          ${statusInfo.icon} ${statusInfo.label}
+        </span>`;
+
+    const noteBorder = isAdmin ? 'border-r border-stone-200' : '';
+
+    const actionColHtml = isAdmin ? `
       <td class="py-1.5 px-1 text-center">
         <div class="flex items-center justify-center space-x-1">
           <button data-id="${item.id}" class="btn-edit-wishlist w-6 h-6 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 flex items-center justify-center transition-colors" title="Sửa dòng này">
@@ -3295,6 +3318,23 @@ function renderCoupleWishlist() {
           </button>
         </div>
       </td>
+    ` : '';
+
+    tr.innerHTML = `
+      <td class="py-1.5 px-1 text-center border-r border-stone-200 font-extrabold text-stone-500 text-[11px]">${index + 1}</td>
+      <td class="py-1.5 px-2.5 border-r border-stone-200">
+        <span class="font-extrabold text-stone-800 text-xs ${item.status === 'done' ? 'line-through text-stone-400' : ''}">${escapeHtml(item.name)}</span>
+      </td>
+      <td class="py-1.5 px-1 text-center border-r border-stone-200">
+        <span class="category-badge ${catInfo.class}">${catInfo.icon} ${catInfo.label}</span>
+      </td>
+      <td class="py-1.5 px-1 text-center border-r border-stone-200">
+        ${statusColHtml}
+      </td>
+      <td class="py-1.5 px-2 ${noteBorder} text-stone-600 text-xs italic">
+        ${item.note ? escapeHtml(item.note) : '<span class="text-stone-300 font-normal">Chưa có</span>'}
+      </td>
+      ${actionColHtml}
     `;
 
     tbody.appendChild(tr);
@@ -3388,6 +3428,8 @@ function initCoupleWishlist() {
   const addBtn = document.getElementById('btn-wishlist-add');
   const addBtnText = document.getElementById('btn-wishlist-add-text');
   const cancelBtn = document.getElementById('btn-wishlist-cancel-edit');
+  const logoutBtn = document.getElementById('btn-wishlist-logout');
+  const quickLoginBtn = document.getElementById('btn-wishlist-quick-login');
   const inputPlace = document.getElementById('wishlist-input-place');
   const selectCat = document.getElementById('wishlist-select-category');
   const selectStatus = document.getElementById('wishlist-select-status');
@@ -3397,6 +3439,25 @@ function initCoupleWishlist() {
   const copyBtn = document.getElementById('btn-wishlist-copy');
   const searchInput = document.getElementById('wishlist-search-input');
   const categoryFilter = document.getElementById('wishlist-filter-category');
+
+  if (logoutBtn) {
+    logoutBtn.onclick = () => {
+      audio.playPop();
+      sessionStorage.removeItem('liltam_authenticated');
+      updateAdminBranding();
+      renderCoupleWishlist();
+      showCatToast("Đã khóa quyền quản trị! Trở về chế độ xem công khai 🔒", "warn");
+    };
+  }
+
+  if (quickLoginBtn) {
+    quickLoginBtn.onclick = () => {
+      audio.playPop();
+      if (typeof window.openAuthModal === 'function') {
+        window.openAuthModal();
+      }
+    };
+  }
 
   function cancelEdit() {
     editingWishlistId = null;
