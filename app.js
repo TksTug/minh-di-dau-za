@@ -767,31 +767,45 @@ function setupClawMachine() {
   gsap.set(clawArmLeft, { rotation: 10 });
   gsap.set(clawArmRight, { rotation: -10 });
 
-  // Render 48-52 densely packed balls with NO GAPS
+  // Render natural organic 3D Gashapon pile (supports 100+ dishes gracefully)
   function renderBallPit() {
     ballPit.innerHTML = '';
     const currentList = getActiveItemsOrFallback();
     
-    const packedList = [];
-    while (packedList.length < 48) {
-      packedList.push(...currentList);
+    // Support from few dishes up to 100+ dishes:
+    // Create an organically diverse pool of ~42 display capsules
+    const displayPool = [];
+    if (currentList.length >= 42) {
+      // If 42-100+ items, randomly sample 42 items for maximum visual variety
+      const shuffled = [...currentList].sort(() => 0.5 - Math.random());
+      displayPool.push(...shuffled.slice(0, 42));
+    } else {
+      // If fewer items, loop to form a lush, full, rounded mound
+      while (displayPool.length < 42) {
+        displayPool.push(...currentList);
+      }
     }
 
-    packedList.slice(0, 48).forEach((item, idx) => {
+    displayPool.slice(0, 42).forEach((item, idx) => {
       const ball = document.createElement('div');
       ball.className = 'shiny-food-ball';
       
       const grad = BALL_GRADIENTS[idx % BALL_GRADIENTS.length];
       ball.style.background = grad.bg;
       
-      const rowNum = Math.floor(idx / 10);
+      // Natural layer depth and organic tilt
+      const rowNum = Math.floor(idx / 8);
       ball.style.zIndex = rowNum + 1;
+
+      // Subtle organic tilt (-6deg to +6deg) so it looks like a real tumbled mound, not a rigid grid
+      const rot = ((idx * 13) % 13) - 6;
+      ball.style.transform = `rotate(${rot}deg)`;
 
       ball.setAttribute('data-food-name', item.name);
       ball.setAttribute('data-food-icon', item.icon || (appMode === 'place' ? '📍' : '🍱'));
       ball.setAttribute('data-grad', grad.bg);
 
-      // Support Real Photo or Emoji inside the shiny sphere + Miniature price/cost!
+      // Miniature price badge
       const shortPrice = appMode === 'place'
         ? (Number(item.cost) === 0 ? 'Free' : getPriceShort(item.cost))
         : getPriceShort(item.price);
@@ -799,15 +813,15 @@ function setupClawMachine() {
       if (item.image) {
         ball.innerHTML = `
           <img src="${item.image}" alt="${item.name}" class="w-7 h-7 rounded-full object-cover shadow-sm pointer-events-none border border-white/60">
-          <div class="flex items-center justify-center gap-0.5 mt-0.5">
+          <div class="flex items-center justify-center gap-0.5 mt-0.5 pointer-events-none">
             <span class="text-[7px] font-black text-white bg-black/60 px-1 rounded-full line-clamp-1 max-w-[32px] text-center leading-tight">${item.name.split(' ')[0]}</span>
             <span class="text-[6.5px] font-black text-stone-900 bg-amber-400 px-1 rounded-full leading-tight shadow-sm">${shortPrice}</span>
           </div>
         `;
       } else {
         ball.innerHTML = `
-          <span class="text-xl filter drop-shadow select-none leading-none">${item.icon || (appMode === 'place' ? '📍' : '🍱')}</span>
-          <div class="flex items-center justify-center gap-0.5 mt-0.5">
+          <span class="text-xl filter drop-shadow select-none leading-none pointer-events-none">${item.icon || (appMode === 'place' ? '📍' : '🍱')}</span>
+          <div class="flex items-center justify-center gap-0.5 mt-0.5 pointer-events-none">
             <span class="text-[7.5px] font-black text-white bg-black/50 px-1 rounded-full line-clamp-1 max-w-[32px] text-center leading-tight">${item.name.split(' ')[0]}</span>
             <span class="text-[6.5px] font-black text-stone-900 bg-amber-400 px-1 rounded-full leading-tight shadow-sm">${shortPrice}</span>
           </div>
@@ -1361,6 +1375,8 @@ function setupOmikuji() {
   }
 
   // Both button click and clicking the foil pack directly trigger the unbox!
+  if (openBtn) openBtn.onclick = doOpenPack;
+  if (boosterPack) boosterPack.onclick = doOpenPack;
 }
 
 // --- 10. TAB NAVIGATION ---
