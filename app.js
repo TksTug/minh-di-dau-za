@@ -2139,6 +2139,8 @@ function initFoodManager() {
     renderModalTagChips();
     renderPlaceList();
     renderModalPlaceTags();
+    const wlTabCount = document.getElementById('modal-wishlist-tab-count');
+    if (wlTabCount) wlTabCount.textContent = coupleWishlist.length;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     if (window.gsap) {
@@ -2161,6 +2163,7 @@ function initFoodManager() {
       setTimeout(() => { if (authPasswordInput) authPasswordInput.focus(); }, 150);
     }
   }
+  window.openAuthModal = openAuthModal;
 
   function closeAuthModal() {
     if (authModal) {
@@ -2528,40 +2531,96 @@ function initPlacesManager() {
 function initModalTabs() {
   const tabFoods = document.getElementById('modal-tab-foods');
   const tabPlaces = document.getElementById('modal-tab-places');
+  const tabWishlist = document.getElementById('modal-tab-wishlist');
   const secFoods = document.getElementById('modal-foods-section');
   const secPlaces = document.getElementById('modal-places-section');
+  const secWishlist = document.getElementById('modal-wishlist-section');
 
-  if (!tabFoods || !tabPlaces) return;
+  function updateModalWishlistStats() {
+    const totalEl = document.getElementById('modal-wl-total');
+    const doneEl = document.getElementById('modal-wl-done');
+    const pendingEl = document.getElementById('modal-wl-pending');
+    const tabCount = document.getElementById('modal-wishlist-tab-count');
+    if (tabCount) tabCount.textContent = coupleWishlist.length;
+    if (totalEl) totalEl.textContent = coupleWishlist.length;
+    if (doneEl) doneEl.textContent = coupleWishlist.filter(i => i.status === 'done').length;
+    if (pendingEl) pendingEl.textContent = coupleWishlist.filter(i => i.status !== 'done').length;
+  }
 
-  tabFoods.onclick = () => {
-    audio.playPop();
-    tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 bg-white text-rose-600 shadow-sm';
-    tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 text-stone-500 hover:text-stone-800';
-    if (secFoods) {
-      secFoods.classList.remove('hidden');
-      secFoods.classList.add('flex');
-    }
-    if (secPlaces) {
-      secPlaces.classList.add('hidden');
-      secPlaces.classList.remove('flex');
-    }
-  };
+  if (tabFoods) {
+    tabFoods.onclick = () => {
+      audio.playPop();
+      tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm';
+      if (tabPlaces) tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      if (tabWishlist) tabWishlist.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      if (secFoods) { secFoods.classList.remove('hidden'); secFoods.classList.add('flex'); }
+      if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
+    };
+  }
 
-  tabPlaces.onclick = () => {
-    audio.playPop();
-    tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 bg-white text-amber-700 shadow-sm';
-    tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 text-stone-500 hover:text-stone-800';
-    if (secPlaces) {
-      secPlaces.classList.remove('hidden');
-      secPlaces.classList.add('flex');
-    }
-    if (secFoods) {
-      secFoods.classList.add('hidden');
-      secFoods.classList.remove('flex');
-    }
-    renderPlaceList();
-    renderModalPlaceTags();
-  };
+  if (tabPlaces) {
+    tabPlaces.onclick = () => {
+      audio.playPop();
+      tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-amber-700 shadow-sm';
+      if (tabFoods) tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      if (tabWishlist) tabWishlist.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      if (secPlaces) { secPlaces.classList.remove('hidden'); secPlaces.classList.add('flex'); }
+      if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
+      if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
+      renderPlaceList();
+      renderModalPlaceTags();
+    };
+  }
+
+  if (tabWishlist) {
+    tabWishlist.onclick = () => {
+      audio.playPop();
+      tabWishlist.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm';
+      if (tabFoods) tabFoods.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      if (tabPlaces) tabPlaces.className = 'flex-1 py-1.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800';
+      if (secWishlist) { secWishlist.classList.remove('hidden'); secWishlist.classList.add('flex'); }
+      if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
+      if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      updateModalWishlistStats();
+    };
+  }
+
+  // Admin Wishlist Buttons (Moved from public view into admin)
+  const adminResetBtn = document.getElementById('btn-admin-wishlist-reset');
+  const adminClearBtn = document.getElementById('btn-admin-wishlist-clear');
+
+  if (adminResetBtn) {
+    adminResetBtn.onclick = async () => {
+      const ok = await showCatConfirm("Sen có chắc muốn khôi phục danh sách địa điểm mẫu ban đầu của <b>Lil Tâm & Ttungg</b> không? 💕", "Khôi Phục Mẫu?", "🔄", "Khôi Phục 🐾");
+      if (ok) {
+        coupleWishlist = JSON.parse(JSON.stringify(DEFAULT_COUPLE_WISHLIST));
+        saveCoupleWishlist();
+        renderCoupleWishlist();
+        updateModalWishlistStats();
+        audio.playMeow();
+        showCatToast("Đã khôi phục danh sách địa điểm mẫu! 🔄", "edit");
+      }
+    };
+  }
+
+  if (adminClearBtn) {
+    adminClearBtn.onclick = async () => {
+      if (coupleWishlist.length === 0) {
+        showCatToast("Sổ tay đang trống rồi nha Sen!", "warn");
+        return;
+      }
+      const ok = await showCatConfirm("Sen có chắc muốn <b>xóa toàn bộ</b> danh sách địa điểm trong sổ tay không? 😿", "Xóa Hết Sổ Tay?", "🗑️", "Xóa Tất Cả 🐾");
+      if (ok) {
+        coupleWishlist = [];
+        saveCoupleWishlist();
+        renderCoupleWishlist();
+        updateModalWishlistStats();
+        audio.playMeow();
+        showCatToast("Đã xóa toàn bộ sổ tay địa điểm! 🐾", "delete");
+      }
+    };
+  }
 }
 
 // --- 12. DUAL FILTERS: THỜI ĐIỂM ĂN & MỨC GIÁ (CHO FOOD) ---
@@ -2912,6 +2971,11 @@ function renderCoupleWishlist() {
   // Wire edit row
   tbody.querySelectorAll('.btn-edit-wishlist').forEach(btn => {
     btn.onclick = () => {
+      if (sessionStorage.getItem('liltam_authenticated') !== 'true') {
+        if (typeof window.openAuthModal === 'function') window.openAuthModal();
+        showCatToast("Vui lòng nhập mật khẩu quản trị để sửa sổ tay nha Sen! 🔐", "warn");
+        return;
+      }
       const id = parseInt(btn.getAttribute('data-id'), 10);
       const item = coupleWishlist.find(i => i.id === id);
       if (!item) return;
@@ -2945,6 +3009,11 @@ function renderCoupleWishlist() {
   // Wire delete row
   tbody.querySelectorAll('.btn-delete-wishlist').forEach(btn => {
     btn.onclick = async () => {
+      if (sessionStorage.getItem('liltam_authenticated') !== 'true') {
+        if (typeof window.openAuthModal === 'function') window.openAuthModal();
+        showCatToast("Vui lòng nhập mật khẩu quản trị để xóa địa điểm khỏi sổ tay! 🔐", "warn");
+        return;
+      }
       const id = parseInt(btn.getAttribute('data-id'), 10);
       const target = coupleWishlist.find(i => i.id === id);
       const itemName = target ? target.name : 'địa điểm này';
@@ -3273,14 +3342,35 @@ function initModeSwitcher() {
   if (wishlistBtn) wishlistBtn.onclick = () => setAppMode('wishlist');
 }
 
-// --- 13. SOUNDCLOUD BACKGROUND MUSIC (NHẠC XỔ SỐ KIẾN THIẾT MIỀN BẮC) ---
+// --- 13. SOUNDCLOUD BACKGROUND MUSIC (PLAYLIST 4 BÀI XOAY VÒNG) ---
+const BGM_PLAYLIST = [
+  {
+    title: "VSTRA - Ai Ngoài Anh 💕",
+    url: "https://api.soundcloud.com/tracks/2237488661"
+  },
+  {
+    title: "Đưa Em Về Nhà 🛵",
+    url: "https://api.soundcloud.com/tracks/1531767415"
+  },
+  {
+    title: "Obito - Hà Nội ft VSTRA (MDXI RMX) 🎧",
+    url: "https://api.soundcloud.com/tracks/1834004217"
+  },
+  {
+    title: "Không Yêu Em Thì Yêu Ai..? 💖",
+    url: "https://api.soundcloud.com/tracks/1925174048"
+  }
+];
+
 class SoundCloudBgmController {
   constructor() {
     this.widget = null;
     this.isReady = false;
     this.shouldPlay = true;
     this.isActuallyPlaying = false;
-    this.volume = 20;
+    this.volume = 25;
+    this.currentIndex = 0;
+    this.playlist = BGM_PLAYLIST;
   }
 
   init() {
@@ -3299,10 +3389,10 @@ class SoundCloudBgmController {
         this.isReady = true;
         this.widget.setVolume(this.volume);
 
+        // Tự động xoay vòng bài hát tiếp theo khi kết thúc bài
         this.widget.bind(window.SC.Widget.Events.FINISH, () => {
           if (!audio.muted && this.shouldPlay) {
-            this.widget.seekTo(0);
-            this.widget.play();
+            this.next(true);
           }
         });
 
@@ -3323,6 +3413,47 @@ class SoundCloudBgmController {
       });
     } catch (e) {
       console.warn("SoundCloud Widget initialization:", e);
+    }
+  }
+
+  getCurrentTrack() {
+    return this.playlist[this.currentIndex];
+  }
+
+  next(showToast = true) {
+    this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+    this.loadCurrentTrack(true, showToast);
+  }
+
+  prev() {
+    this.currentIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
+    this.loadCurrentTrack(true, true);
+  }
+
+  loadCurrentTrack(autoPlay = true, showToast = true) {
+    if (!this.widget) return;
+    const track = this.getCurrentTrack();
+    try {
+      this.widget.load(track.url, {
+        auto_play: autoPlay && this.shouldPlay && !audio.muted,
+        hide_related: true,
+        show_comments: false,
+        show_user: false,
+        show_reposts: false,
+        show_teaser: false,
+        visual: false,
+        callback: () => {
+          this.widget.setVolume(this.volume);
+          if (autoPlay && this.shouldPlay && !audio.muted) {
+            this.widget.play();
+          }
+          if (showToast) {
+            showCatToast(`🎵 Đang phát: ${track.title}`, "success");
+          }
+        }
+      });
+    } catch (e) {
+      console.warn("SC load track error:", e);
     }
   }
 
@@ -3388,26 +3519,51 @@ function updateSoundVisuals(isPlaying) {
 function initSoundToggle() {
   const soundBtn = document.getElementById('btn-toggle-sound');
   const soundBell = document.getElementById('sound-bell-icon');
+  const nextBgmBtn = document.getElementById('btn-next-bgm');
 
-  soundBtn.onclick = (e) => {
-    if (e) e.stopPropagation();
-    audio.init();
-    audio.muted = !audio.muted;
-    if (audio.muted) {
-      soundBtn.classList.add('opacity-50');
-      soundBell.classList.remove('text-amber-500');
-      soundBell.classList.add('text-stone-400');
-      lotteryBgm.stop();
-      updateSoundVisuals(false);
-    } else {
-      soundBtn.classList.remove('opacity-50');
-      soundBell.classList.add('text-amber-500');
-      soundBell.classList.remove('text-stone-400');
-      lotteryBgm.start();
-      updateSoundVisuals(true);
-      audio.playBellDing();
-    }
-  };
+  if (soundBtn) {
+    soundBtn.onclick = (e) => {
+      if (e) e.stopPropagation();
+      audio.init();
+      audio.muted = !audio.muted;
+      if (audio.muted) {
+        soundBtn.classList.add('opacity-50');
+        if (soundBell) {
+          soundBell.classList.remove('text-amber-500');
+          soundBell.classList.add('text-stone-400');
+        }
+        lotteryBgm.stop();
+        updateSoundVisuals(false);
+      } else {
+        soundBtn.classList.remove('opacity-50');
+        if (soundBell) {
+          soundBell.classList.add('text-amber-500');
+          soundBell.classList.remove('text-stone-400');
+        }
+        lotteryBgm.start();
+        updateSoundVisuals(true);
+        audio.playBellDing();
+      }
+    };
+  }
+
+  if (nextBgmBtn) {
+    nextBgmBtn.onclick = (e) => {
+      if (e) e.stopPropagation();
+      audio.playPop();
+      if (audio.muted) {
+        audio.init();
+        audio.muted = false;
+        if (soundBtn) soundBtn.classList.remove('opacity-50');
+        if (soundBell) {
+          soundBell.classList.add('text-amber-500');
+          soundBell.classList.remove('text-stone-400');
+        }
+        updateSoundVisuals(true);
+      }
+      lotteryBgm.next(true);
+    };
+  }
 }
 
 // --- 14. RESULT MODAL ACTIONS ---
