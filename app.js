@@ -2232,6 +2232,7 @@ function initFoodManager() {
         closeAuthModal();
         audio.playMeow();
         showCatToast("Chào mừng Lil Tâm đã mở khóa quyền quản trị! 👑", "success");
+        if (typeof updateAdminBranding === 'function') updateAdminBranding();
         openFoodsModalDirectly();
       } else {
         if (authErrorMsg) authErrorMsg.classList.remove('hidden');
@@ -2250,6 +2251,7 @@ function initFoodManager() {
       sessionStorage.removeItem('liltam_authenticated');
       modal.classList.add('hidden');
       modal.classList.remove('flex');
+      if (typeof updateAdminBranding === 'function') updateAdminBranding();
       showCatToast("Đã khóa lại quyền quản trị thực đơn & địa điểm! 🔒", "warn");
     };
   }
@@ -3075,6 +3077,65 @@ let coupleWishlist = [];
 let currentWishlistFilter = 'all'; // 'all' | 'pending' | 'planned' | 'done'
 let currentWishlistCategory = 'all';
 let currentWishlistSearch = '';
+function isLilTamAdmin() {
+  return sessionStorage.getItem('liltam_authenticated') === 'true';
+}
+
+function updateAdminBranding() {
+  const isAdmin = isLilTamAdmin();
+
+  // Top Header elements
+  const headerMainTitle = document.getElementById('header-main-title');
+  const headerMainIcon = document.getElementById('header-main-icon');
+  const headerMainTagline = document.getElementById('header-main-tagline');
+
+  if (appMode === 'wishlist') {
+    if (headerMainTitle) {
+      headerMainTitle.innerHTML = isAdmin
+        ? 'LIL TÂM & <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500">TTUNGG</span> 💖'
+        : 'MÌNH ĐI <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500">ĐÂU ZA?</span> 🐾';
+    }
+    if (headerMainIcon) {
+      headerMainIcon.textContent = isAdmin ? '💑' : '🗺️';
+    }
+    if (headerMainTagline) {
+      headerMainTagline.textContent = isAdmin
+        ? '🐾 Danh sách địa điểm ăn uống, đi chơi & cà phê hai đứa mình muốn đến 🐾'
+        : '🐾 Danh sách địa điểm ăn uống, đi chơi & cà phê muốn đến 🐾';
+    }
+  }
+
+  // Wishlist card elements
+  const cardIcon = document.getElementById('wishlist-card-icon');
+  const cardBadge = document.getElementById('wishlist-card-badge');
+  const cardTitle = document.getElementById('wishlist-card-title');
+  const emptyMsg = document.getElementById('wishlist-empty-msg');
+  const footerText = document.getElementById('footer-copyright-text');
+
+  if (cardIcon) cardIcon.textContent = isAdmin ? '💑' : '🗺️';
+  if (cardBadge) cardBadge.textContent = isAdmin ? 'Không Gacha • Sổ Tay Cặp Đôi' : 'Không Gacha • Sổ Tay Khám Phá';
+  if (cardTitle) {
+    cardTitle.textContent = isAdmin
+      ? 'DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ CỦA LIL TÂM VÀ TTUNGG'
+      : 'DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ MUỐN ĐẾN';
+  }
+  if (emptyMsg) {
+    emptyMsg.textContent = isAdmin
+      ? 'Hãy thêm quán ngon hoặc nơi muốn đến ở form phía trên nha Lil Tâm & Ttungg 💕'
+      : 'Hãy thêm quán ngon hoặc nơi muốn đến ở form phía trên nha 💕';
+  }
+  if (footerText) {
+    footerText.textContent = isAdmin
+      ? '🐾 Hoàng Thượng Ăn Gì? • Lil Tâm & Ttungg 💖'
+      : '🐾 Hoàng Thượng Ăn Gì? • Sổ Tay Đi Chơi & Khám Phá ✨';
+  }
+
+  if (typeof updateWishlistStats === 'function') {
+    updateWishlistStats();
+  }
+}
+window.updateAdminBranding = updateAdminBranding;
+
 let editingWishlistId = null;
 
 const WISHLIST_CATEGORIES = {
@@ -3167,12 +3228,19 @@ function updateWishlistStats() {
 
   const speech = document.getElementById('wishlist-couple-speech');
   if (speech) {
+    const isAdmin = isLilTamAdmin();
     if (total === 0) {
-      speech.innerHTML = `<span>🐾</span> <span>Bảng đang trống trơn nè, Lil Tâm & Ttungg mau ghi những điểm hẹn hò đầu tiên vào nha! 💕</span>`;
+      speech.innerHTML = isAdmin
+        ? `<span>🐾</span> <span>Bảng đang trống trơn nè, Lil Tâm & Ttungg mau ghi những điểm hẹn hò đầu tiên vào nha! 💕</span>`
+        : `<span>🐾</span> <span>Bảng đang trống trơn nè, mau ghi những điểm muốn đến đầu tiên vào nha! 💕</span>`;
     } else if (done === total && total > 0) {
-      speech.innerHTML = `<span>🎉</span> <span>Woa đỉnh quá! Lil Tâm & Ttungg đã hoàn thành 100% tất cả <b>${total}</b> địa điểm rồi! Thêm địa điểm mới thôi nào! 💖</span>`;
+      speech.innerHTML = isAdmin
+        ? `<span>🎉</span> <span>Woa đỉnh quá! Lil Tâm & Ttungg đã hoàn thành 100% tất cả <b>${total}</b> địa điểm rồi! Thêm địa điểm mới thôi nào! 💖</span>`
+        : `<span>🎉</span> <span>Woa đỉnh quá! Đã hoàn thành 100% tất cả <b>${total}</b> địa điểm rồi! Thêm địa điểm mới thôi nào! 💖</span>`;
     } else {
-      speech.innerHTML = `<span>🐾</span> <span>Hai đứa mình đã cùng nhau đi được <b class="text-emerald-700">${done}</b> địa điểm! Còn <b class="text-rose-600">${pending + planned}</b> chỗ đang chờ Lil Tâm & Ttungg cùng vi vu khám phá 💕</span>`;
+      speech.innerHTML = isAdmin
+        ? `<span>🐾</span> <span>Hai đứa mình đã cùng nhau đi được <b class="text-emerald-700">${done}</b> địa điểm! Còn <b class="text-rose-600">${pending + planned}</b> chỗ đang chờ Lil Tâm & Ttungg cùng vi vu khám phá 💕</span>`
+        : `<span>🐾</span> <span>Đã cùng nhau đi được <b class="text-emerald-700">${done}</b> địa điểm! Còn <b class="text-rose-600">${pending + planned}</b> chỗ đang chờ cùng vi vu khám phá 💕</span>`;
     }
   }
 }
@@ -3375,7 +3443,8 @@ function initCoupleWishlist() {
           note: note
         };
         coupleWishlist.unshift(newItem);
-        showCatToast(`Đã thêm "${name}" vào sổ tay Lil Tâm & Ttungg! 💖`, 'success');
+        const isAdmin = isLilTamAdmin();
+        showCatToast(isAdmin ? `Đã thêm "${name}" vào sổ tay Lil Tâm & Ttungg! 💖` : `Đã thêm "${name}" vào sổ tay địa điểm! ✨`, 'success');
       }
 
       saveCoupleWishlist();
@@ -3480,7 +3549,10 @@ function initCoupleWishlist() {
         alert("Danh sách đang trống nha Sen!");
         return;
       }
-      let text = "💑 DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ CỦA LIL TÂM VÀ TTUNGG 💖\n\n";
+      const isAdmin = isLilTamAdmin();
+      let text = isAdmin
+        ? "💑 DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ CỦA LIL TÂM VÀ TTUNGG 💖\n\n"
+        : "🗺️ DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ MUỐN ĐẾN ✨\n\n";
       coupleWishlist.forEach((item, idx) => {
         const cat = WISHLIST_CATEGORIES[item.category] ? WISHLIST_CATEGORIES[item.category].label : '';
         const st = item.status === 'done' ? '[Đã đi ✅]' : (item.status === 'planned' ? '[Sắp đi 💖]' : '[Chưa đi ⏳]');
@@ -3489,7 +3561,9 @@ function initCoupleWishlist() {
 
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-          alert("Đã sao chép danh sách vào bộ nhớ tạm! Lil Tâm & Ttungg có thể dán vào Zalo/Messenger gửi cho nhau nhé 💕");
+          alert(isAdmin
+            ? "Đã sao chép danh sách vào bộ nhớ tạm! Lil Tâm & Ttungg có thể dán vào Zalo/Messenger gửi cho nhau nhé 💕"
+            : "Đã sao chép danh sách vào bộ nhớ tạm! Bạn có thể dán vào Zalo/Messenger để lưu lại nhé 💕");
         }).catch(() => {
           prompt("Sao chép danh sách dưới đây:", text);
         });
@@ -3556,9 +3630,9 @@ function setAppMode(mode) {
       wishlistView.classList.add('flex');
     }
 
-    if (headerMainTitle) headerMainTitle.innerHTML = 'LIL TÂM & <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-amber-500">TTUNGG</span> 💖';
-    if (headerMainIcon) headerMainIcon.textContent = '💑';
-    if (headerMainTagline) headerMainTagline.textContent = '🐾 Danh sách địa điểm ăn uống, đi chơi & cà phê hai đứa mình muốn đến 🐾';
+    if (typeof updateAdminBranding === 'function') {
+      updateAdminBranding();
+    }
     if (headerManageText) headerManageText.innerHTML = `Sổ Tay (<span id="foods-badge-count">${coupleWishlist.length}</span>)`;
 
     renderCoupleWishlist();
@@ -3904,6 +3978,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initConfirmModal();
   initFoodManager();
   initCoupleWishlist();
+  updateAdminBranding();
   initSuggestionModal();
   initResultActions();
   setupClawMachine();

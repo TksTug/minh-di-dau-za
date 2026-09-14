@@ -21,7 +21,7 @@
   <!-- SoundCloud Widget API -->
   <script src="https://w.soundcloud.com/player/api.js"></script>
   <!-- Custom CSS with Cache Buster -->
-  <link rel="stylesheet" href="style.css?v=3.6">
+  <link rel="stylesheet" href="style.css?v=3.7">
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 md:p-5 selection:bg-rose-200">
 
@@ -564,14 +564,14 @@
         
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-100 pb-2.5">
           <div class="flex items-center gap-2.5">
-            <span class="text-2xl md:text-3xl p-1.5 rounded-xl bg-rose-50 border border-rose-200 shadow-xs">💑</span>
+            <span id="wishlist-card-icon" class="text-2xl md:text-3xl p-1.5 rounded-xl bg-rose-50 border border-rose-200 shadow-xs">🗺️</span>
             <div>
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="px-2 py-0.2 rounded-full text-[9px] font-black bg-rose-100 text-rose-700 uppercase tracking-wider">Bucket List</span>
-                <span class="text-[11px] font-bold text-stone-400">Không Gacha • Sổ Tay Cặp Đôi</span>
+                <span id="wishlist-card-badge" class="text-[11px] font-bold text-stone-400">Không Gacha • Sổ Tay Khám Phá</span>
               </div>
-              <h2 class="text-xs sm:text-sm md:text-base font-black text-[#7A2018] tracking-tight uppercase mt-0.5">
-                DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ CỦA LIL TÂM VÀ TTUNGG
+              <h2 id="wishlist-card-title" class="text-xs sm:text-sm md:text-base font-black text-[#7A2018] tracking-tight uppercase mt-0.5">
+                DANH SÁCH ĐỊA ĐIỂM ĂN UỐNG, ĐI CHƠI & CÀ PHÊ MUỐN ĐẾN
               </h2>
             </div>
           </div>
@@ -706,7 +706,7 @@
         <div id="wishlist-empty-state" class="hidden py-6 flex-col items-center justify-center text-center gap-1.5">
           <span class="text-3xl">🐾</span>
           <p class="font-bold text-stone-500 text-xs sm:text-sm">Chưa có địa điểm nào trong mục này!</p>
-          <p class="text-[11px] text-stone-400">Hãy thêm quán ngon hoặc nơi muốn đến ở form phía trên nha Lil Tâm & Ttungg 💕</p>
+          <p id="wishlist-empty-msg" class="text-[11px] text-stone-400">Hãy thêm quán ngon hoặc nơi muốn đến ở form phía trên nha 💕</p>
         </div>
 
       </div>
@@ -716,7 +716,7 @@
 
   <!-- ================= FOOTER ================= -->
   <footer class="max-w-4xl mx-auto w-full text-center py-2 text-stone-400 text-[11px] font-semibold">
-    <p>🐾 Hoàng Thượng Ăn Gì? • Lil Tâm & Ttungg 💖</p>
+    <p id="footer-copyright-text">🐾 Hoàng Thượng Ăn Gì? • Sổ Tay Đi Chơi & Khám Phá ✨</p>
   </footer>
 
   <!-- ================= MODAL: KẾT QUẢ MÓN ĂN (GACHA CARD 3D) ================= -->
@@ -1277,6 +1277,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
   <!-- Application Script with Cache Buster -->
-  <script src="app.js?v=3.6"></script>
+  <script src="app.js?v=3.7"></script>
 </body>
 </html>
