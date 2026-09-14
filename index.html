@@ -17,7 +17,7 @@
   <!-- SoundCloud Widget API -->
   <script src="https://w.soundcloud.com/player/api.js"></script>
   <!-- Custom CSS with Cache Buster -->
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=2.7">
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 md:p-5 selection:bg-rose-200">
 
@@ -67,15 +67,6 @@
           <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
         </span>
       </button>
-
-      <!-- Cloud Sync Realtime Status Pill -->
-      <div id="cloud-sync-status" class="flex items-center gap-1 px-2 md:px-2.5 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] md:text-xs font-black shadow-xs" title="Đã kết nối Firebase - Mọi người trong nhóm đều thấy món mới thêm!">
-        <span class="relative flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-        </span>
-        <span id="cloud-sync-text">Đồng bộ nhóm</span>
-      </div>
 
       <!-- Manage Items Button -->
       <button id="btn-open-foods" class="btn-jelly px-3 md:px-4 py-2 rounded-xl md:rounded-2xl bg-gradient-to-r from-rose-400 to-pink-400 text-white font-extrabold text-xs flex items-center space-x-1.5 shadow-sm">
@@ -172,9 +163,8 @@
       </div>
 
       <!-- Live Count Status -->
-      <div class="flex items-center justify-between text-[11px] font-bold text-stone-500 pt-0.5">
+      <div class="text-[11px] font-bold text-stone-500 pt-0.5">
         <span id="filter-status-text">🐾 Đang có <b class="text-rose-600 font-black text-xs" id="filtered-count-num">36</b> món phù hợp để quay</span>
-        <span class="text-[10px] text-rose-500 font-extrabold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200 shadow-sm">🎯 100% đúng gu Sen</span>
       </div>
 
     </div>
@@ -214,9 +204,8 @@
       </div>
 
       <!-- Live Count Status -->
-      <div class="flex items-center justify-between text-[11px] font-bold text-stone-500 pt-0.5">
+      <div class="text-[11px] font-bold text-stone-500 pt-0.5">
         <span id="place-filter-status-text">🐾 Đang có <b class="text-amber-600 font-black text-xs" id="filtered-place-count-num">20</b> địa điểm phù hợp để đi chơi</span>
-        <span class="text-[10px] text-amber-600 font-extrabold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shadow-sm">🚀 Đi quẩy hết mình</span>
       </div>
 
     </div>
@@ -325,19 +314,12 @@
                   <div class="joystick-knob group-hover:brightness-110"></div>
                 </div>
               </div>
-              <div class="flex flex-col text-left">
+              <div class="flex items-center">
                 <span class="text-xs sm:text-sm font-black text-rose-600 group-hover:text-rose-700 flex items-center gap-1 leading-tight">
                   <span>🕹️</span> NHẤN CẦN ĐỂ GẮP!
                 </span>
-                <span class="text-[10px] font-bold text-stone-400">Gạt cần hồng điều khiển</span>
               </div>
             </button>
-
-            <!-- 1 Xu Mèo Badge -->
-            <div class="bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-lg text-center hidden sm:block shadow-sm">
-              <div class="w-6 h-1 bg-stone-700 mx-auto rounded"></div>
-              <span class="text-[9px] font-black text-amber-800 uppercase tracking-wider">1 XU MÈO</span>
-            </div>
 
             <!-- Desktop Cat GIF Cheer Area (gif_meo.gif) -->
             <div id="cat-gif-container" class="w-24 h-16 sm:w-28 sm:h-20 cat-gif-frame rounded-2xl p-1 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-all" title="Mèo cưng cổ vũ! Nhấn vào đây cũng gắp được nha">
@@ -345,8 +327,6 @@
             </div>
           </div>
         </div>
-
-        <p class="text-[11px] font-bold text-stone-400 mt-2">✨ Càng gắp chuyển động mượt mà, ôm trọn quả bóng món ăn</p>
       </div>
 
       <!-- ---------------------------------------------------- -->
@@ -376,7 +356,6 @@
           <button id="btn-slot-spin" class="btn-jelly w-full py-4 rounded-3xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-white font-black text-lg md:text-xl flex items-center justify-center space-x-2 tracking-wide">
             <span>🎰 GẠT ĐUÔI QUAY XÈNG!</span>
           </button>
-          <p class="text-[11px] font-bold text-stone-400">✨ Click vào nút hoặc chạm vào đuôi mèo bông bên hông</p>
         </div>
       </div>
 
@@ -549,7 +528,6 @@
           <button id="btn-omikuji-shake" class="btn-jelly w-full py-4 rounded-3xl bg-gradient-to-r from-amber-500 via-rose-500 to-pink-500 text-white font-black text-lg md:text-xl flex items-center justify-center space-x-2 tracking-wide shadow-xl">
             <span id="btn-omikuji-shake-text">✂️ XÉ TÚI MỞ THẺ MÓN ĂN!</span>
           </button>
-          <p id="omikuji-guide-text" class="text-[11px] font-bold text-stone-400">✨ Bấm nút hoặc chạm vào túi để xé bao nilon và mở thẻ may mắn</p>
         </div>
       </div>
 
@@ -714,7 +692,6 @@
           <button id="btn-wishlist-reset-default" class="text-rose-500 hover:underline flex items-center gap-1 font-bold">
             <span>🔄 Khôi phục mẫu</span>
           </button>
-          <span>Tự động lưu vĩnh viễn trên máy 💾</span>
         </div>
 
       </div>
@@ -723,8 +700,8 @@
   </main>
 
   <!-- ================= FOOTER ================= -->
-  <footer class="max-w-4xl mx-auto w-full text-center py-2 text-stone-400 text-xs font-semibold">
-    <p>Đồ hoạ 3D Kawaii & Bản quyền thuộc về Hội Mèo 🐾 Không còn sợ đau đầu hỏi "Ăn gì?"</p>
+  <footer class="max-w-4xl mx-auto w-full text-center py-2 text-stone-400 text-[11px] font-semibold">
+    <p>🐾 Hoàng Thượng Ăn Gì? • Lil Tâm & Ttungg 💖</p>
   </footer>
 
   <!-- ================= MODAL: KẾT QUẢ MÓN ĂN (GACHA CARD 3D) ================= -->
@@ -968,7 +945,6 @@
           <button id="btn-reset-default-foods" class="text-xs text-rose-500 hover:underline font-bold flex items-center gap-1">
             <span>🔄 Khôi phục 36 món gốc</span>
           </button>
-          <span class="text-[11px] text-stone-400 font-semibold">Tự động lưu trên máy Sen</span>
         </div>
       </div>
 
@@ -1048,7 +1024,6 @@
           <button id="btn-reset-default-places" class="text-xs text-amber-600 hover:underline font-bold flex items-center gap-1">
             <span>🔄 Khôi phục 20 địa điểm gốc</span>
           </button>
-          <span class="text-[11px] text-stone-400 font-semibold">Tự động lưu trên máy Sen</span>
         </div>
       </div>
 
@@ -1070,6 +1045,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
   <!-- Application Script with Cache Buster -->
-  <script src="app.js?v=2.6"></script>
+  <script src="app.js?v=2.7"></script>
 </body>
 </html>
