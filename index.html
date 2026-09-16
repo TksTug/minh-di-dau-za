@@ -117,6 +117,10 @@
         <span class="text-sm md:text-base">🎡</span>
         <span>Mình Đi Đâu Za?</span>
       </button>
+      <button id="mode-switch-movie" class="px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-purple-600 hover:bg-white/60">
+        <span class="text-sm md:text-base">🎬</span>
+        <span>Xem Phim Gì Za?</span>
+      </button>
       <button id="mode-switch-wishlist" class="px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-amber-700 hover:bg-white/60">
         <span class="text-sm md:text-base">📝</span>
         <span>Mình Đi Chỗ Này Nha!</span>
@@ -238,6 +242,50 @@
       <div class="text-[11px] font-bold text-stone-500 pt-0.5 flex items-center justify-between">
         <span id="place-filter-status-text">🐾 Đang có <b class="text-amber-600 font-black text-xs" id="filtered-place-count-num">20</b> địa điểm phù hợp để đi chơi</span>
         <button type="button" id="btn-quick-view-menu-place" class="text-[11px] font-black text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-0.5 rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95">
+          <span>📖</span> <span>Xem Menu</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- 🎬 DUAL FILTER BAR: BỘ LỌC PHIM (THỂ LOẠI & NỀN TẢNG/THỜI LƯỢNG) -->
+    <div id="filter-bar-movie" class="hidden w-full max-w-xl bg-white/95 backdrop-blur-md rounded-2xl md:rounded-3xl p-2.5 md:p-3 border-2 border-purple-200 shadow-sm mb-2.5 flex flex-col gap-2">
+      
+      <!-- Tier 1: Thể Loại Phim -->
+      <div class="flex items-center justify-between flex-wrap gap-1.5">
+        <span class="text-[11px] font-black text-purple-600 flex items-center gap-1 flex-shrink-0">
+          <span>🎯</span> THỂ LOẠI:
+        </span>
+        <div id="movie-filter-container" class="flex items-center flex-wrap gap-1 md:gap-1.5">
+          <!-- Dynamic movie filter tags -->
+        </div>
+      </div>
+
+      <!-- Tier 2: Nền Tảng / Thời Lượng -->
+      <div class="flex items-center justify-between flex-wrap gap-1.5 pt-2 border-t border-purple-100">
+        <span class="text-[11px] font-black text-rose-600 flex items-center gap-1 flex-shrink-0">
+          <span>📺</span> NỀN TẢNG:
+        </span>
+        <div class="flex items-center flex-wrap gap-1 md:gap-1.5">
+          <button data-movieplatform="all" class="movie-platform-btn active-cost-filter px-2.5 py-0.5 rounded-full text-[11px] font-black transition-all">
+            ✨ Tất cả
+          </button>
+          <button data-movieplatform="cinema" class="movie-platform-btn px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all">
+            🍿 Chiếu Rạp
+          </button>
+          <button data-movieplatform="netflix" class="movie-platform-btn px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all">
+            🔴 Netflix / Web
+          </button>
+          <button data-movieplatform="short" class="movie-platform-btn px-2.5 py-0.5 rounded-full text-[11px] font-bold transition-all">
+            ⏱️ Dưới 100p
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Count Status & Quick Menu View -->
+      <div class="text-[11px] font-bold text-stone-500 pt-0.5 flex items-center justify-between">
+        <span id="movie-filter-status-text">🐾 Đang có <b class="text-purple-600 font-black text-xs" id="filtered-movie-count-num">20</b> bộ phim phù hợp để xem</span>
+        <button type="button" id="btn-quick-view-menu-movie" class="text-[11px] font-black text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2.5 py-0.5 rounded-lg transition-all flex items-center gap-1 shadow-xs cursor-pointer active:scale-95">
           <span>📖</span> <span>Xem Menu</span>
         </button>
       </div>
@@ -976,7 +1024,7 @@
           <span class="text-2xl sm:text-3xl">📖</span>
           <div>
             <h3 class="font-black text-base sm:text-lg text-stone-800 leading-tight">Thực Đơn Vòng Quay</h3>
-            <p class="text-[11px] sm:text-xs text-stone-400 font-bold">Danh sách tất cả món ăn & điểm vui chơi có thể quay trúng</p>
+            <p class="text-[11px] sm:text-xs text-stone-400 font-bold">Danh sách tất cả món ăn, địa điểm & phim có thể quay trúng</p>
           </div>
         </div>
         <button id="btn-close-public-menu" class="p-1.5 sm:p-2 rounded-full text-stone-400 hover:text-stone-700 hover:bg-rose-50 cursor-pointer">
@@ -984,8 +1032,8 @@
         </button>
       </div>
 
-      <!-- Mode Switch Tabs: Món Ăn vs Địa Điểm -->
-      <div class="grid grid-cols-2 gap-1.5 p-1 bg-rose-100/70 rounded-2xl border border-rose-200 mt-2 mb-2 flex-shrink-0">
+      <!-- Mode Switch Tabs: Món Ăn vs Địa Điểm vs Phim -->
+      <div class="grid grid-cols-3 gap-1.5 p-1 bg-rose-100/70 rounded-2xl border border-rose-200 mt-2 mb-2 flex-shrink-0">
         <button id="public-menu-tab-foods" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate cursor-pointer">
           <span>🍜</span>
           <span>Món Ăn (<span id="public-menu-foods-count">36</span>)</span>
@@ -993,6 +1041,10 @@
         <button id="public-menu-tab-places" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer">
           <span>🎡</span>
           <span>Địa Điểm (<span id="public-menu-places-count">20</span>)</span>
+        </button>
+        <button id="public-menu-tab-movies" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer">
+          <span>🎬</span>
+          <span>Phim (<span id="public-menu-movies-count">20</span>)</span>
         </button>
       </div>
 
@@ -1061,8 +1113,8 @@
         </div>
       </div>
 
-      <!-- Modal Category Tabs: Món Ăn vs Địa Điểm vs Sổ Tay vs Gợi Ý -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-rose-100/70 rounded-2xl border border-rose-200 mt-2 mb-1.5 flex-shrink-0">
+      <!-- Modal Category Tabs: Món Ăn vs Địa Điểm vs Phim vs Sổ Tay vs Gợi Ý -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-rose-100/70 rounded-2xl border border-rose-200 mt-2 mb-1.5 flex-shrink-0">
         <button id="modal-tab-foods" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate">
           <span>🍜</span>
           <span>Món Ăn (<span id="modal-foods-tab-count">36</span>)</span>
@@ -1070,6 +1122,10 @@
         <button id="modal-tab-places" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate">
           <span>🎡</span>
           <span>Địa Điểm (<span id="modal-places-tab-count">20</span>)</span>
+        </button>
+        <button id="modal-tab-movies" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate">
+          <span>🎬</span>
+          <span>Phim (<span id="modal-movies-tab-count">20</span>)</span>
         </button>
         <button id="modal-tab-wishlist" class="py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate">
           <span>💑</span>
@@ -1297,6 +1353,80 @@
         </div>
       </div>
 
+      <!-- ================= SECTION: MOVIES MANAGER ================= -->
+      <div id="modal-movies-section" class="hidden flex-col flex-grow overflow-hidden">
+        <!-- Add/Edit Movie Form -->
+        <div class="my-2 p-3 bg-purple-50/70 rounded-2xl border border-purple-200 flex flex-col gap-2 flex-shrink-0">
+          <div class="flex items-center justify-between">
+            <p id="movie-form-title" class="text-xs font-black text-purple-800 flex items-center gap-1">
+              <span>➕</span> <span>Thêm bộ phim mới vào kho:</span>
+            </p>
+            <button type="button" id="btn-cancel-edit-movie" class="hidden text-xs text-rose-700 bg-rose-100 hover:bg-rose-200 px-2.5 py-1 rounded-lg font-bold transition-all shadow-xs">
+              ✕ Hủy sửa
+            </button>
+          </div>
+
+          <!-- Row 1: Name & Platform & Duration -->
+          <div class="flex gap-2 flex-wrap sm:flex-nowrap">
+            <input id="new-movie-name" type="text" placeholder="Tên phim: Your Name, Interstellar, Mắt Biếc..." class="flex-grow px-3 py-2 rounded-xl text-sm border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white font-semibold">
+            
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-xs font-black text-purple-800 flex items-center gap-0.5">📺 Nền tảng:</span>
+              <select id="new-movie-platform" class="px-2.5 py-2 rounded-xl text-xs border border-purple-300 bg-white font-black text-stone-800">
+                <option value="netflix" selected>🔴 Netflix / Web</option>
+                <option value="cinema">🍿 Chiếu Rạp</option>
+                <option value="youtube">▶️ Youtube</option>
+                <option value="other">🎬 Khác / Tải về</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <span class="text-xs font-black text-purple-800 flex items-center gap-0.5">⏱️ Lượng:</span>
+              <input id="new-movie-duration" type="text" placeholder="105 phút" value="105 phút" class="w-20 px-2 py-2 rounded-xl text-xs border border-purple-300 bg-white font-bold text-center">
+            </div>
+          </div>
+
+          <!-- Row 2: Icon, Movie Tags & Add Movie Button -->
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="flex items-center gap-2 flex-wrap">
+              <select id="new-movie-icon" class="px-2 py-2 rounded-xl text-lg border border-purple-200 bg-white">
+                <option value="🎬">🎬 Điện ảnh</option>
+                <option value="🌸">🌸 Anime</option>
+                <option value="💖">💖 Tình cảm</option>
+                <option value="🤣">🤣 Hài hước</option>
+                <option value="👻">👻 Kinh dị</option>
+                <option value="💥">💥 Hành động</option>
+                <option value="🕵️">🕵️ Trinh thám</option>
+                <option value="🍃">🍃 Chữa lành</option>
+                <option value="🚀">🚀 Viễn tưởng</option>
+                <option value="🍿">🍿 Bom tấn</option>
+              </select>
+
+              <div class="flex items-center gap-1 flex-wrap">
+                <span class="text-[11px] font-bold text-purple-700">Thể loại:</span>
+                <div id="modal-movie-tags-container" class="flex items-center gap-1 flex-wrap">
+                  <!-- Injected via JavaScript -->
+                </div>
+              </div>
+            </div>
+
+            <button id="btn-add-movie" class="btn-jelly px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs flex-shrink-0 shadow-md">
+              Thêm Phim
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable Movies List -->
+        <div id="movies-list-items" class="flex-grow overflow-y-auto space-y-2 pr-1 my-1 max-h-[42vh] sm:max-h-80 custom-scrollbar"></div>
+
+        <!-- Footer Reset Movies -->
+        <div class="pt-2.5 border-t border-purple-100 flex items-center justify-between flex-shrink-0">
+          <button id="btn-reset-default-movies" class="text-xs text-purple-600 hover:underline font-bold flex items-center gap-1">
+            <span>🔄 Khôi phục 20 bộ phim gốc</span>
+          </button>
+        </div>
+      </div>
+
       <!-- ================= SECTION 3: WISHLIST MANAGER ================= -->
       <div id="modal-wishlist-section" class="hidden flex-col flex-grow overflow-hidden">
         <div class="my-2 p-3.5 bg-gradient-to-r from-rose-50 to-pink-50 rounded-2xl border border-rose-200 flex flex-col gap-3">
@@ -1383,6 +1513,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
   <!-- Application Script with Cache Buster -->
-  <script src="app.js?v=3.9"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>

@@ -349,6 +349,48 @@ function initFirebaseSync() {
       if (typeof updateSuggestionsTabCount === 'function') updateSuggestionsTabCount();
     });
 
+    // 7. SYNC MOVIES
+    fbDb.ref('movies').on('value', snapshot => {
+      const val = snapshot.val();
+      const sanitized = sanitizeCloudList(val);
+      if (sanitized.length > 0) {
+        isSyncingFromCloud = true;
+        movies = sanitized;
+        localStorage.setItem('cat_movies_list_v1', JSON.stringify(movies));
+        if (appMode === 'movie') {
+          updateActiveMovieFilterCount();
+          if (typeof renderBallPit === 'function') renderBallPit();
+          if (typeof setupSlotMachine === 'function') setupSlotMachine();
+          const badge = document.getElementById('foods-badge-count');
+          if (badge) badge.textContent = movies.length;
+        }
+        if (typeof renderMovieList === 'function') renderMovieList();
+        isSyncingFromCloud = false;
+      } else if (!val) {
+        if (movies && movies.length > 0) {
+          fbDb.ref('movies').set(movies);
+        }
+      }
+    });
+
+    // 8. SYNC MOVIE TAGS
+    fbDb.ref('movieTags').on('value', snapshot => {
+      const val = snapshot.val();
+      const sanitized = sanitizeCloudTags(val);
+      if (sanitized.length > 0) {
+        isSyncingFromCloud = true;
+        movieTags = sanitized;
+        localStorage.setItem('cat_movie_tags_v1', JSON.stringify(movieTags));
+        if (typeof renderMovieFilterButtons === 'function') renderMovieFilterButtons();
+        if (typeof renderModalMovieTags === 'function') renderModalMovieTags();
+        isSyncingFromCloud = false;
+      } else if (!val) {
+        if (movieTags && movieTags.length > 0) {
+          fbDb.ref('movieTags').set(movieTags);
+        }
+      }
+    });
+
   } catch (err) {
     console.warn("Firebase sync error:", err);
     setCloudSyncStatus('offline', 'Bộ nhớ máy');
@@ -520,6 +562,83 @@ const CAT_PLACE_QUOTES = [
   "Kèo này quá thơm! Trẫm chuẩn y 100%, xuất phát liền!",
   "Hôm nay trời đẹp, tới địa điểm này xả stress là đúng bài rồi Sen!",
   "Đi quẩy hết mình đi Sen, nhưng nhớ về trước giờ ăn của Trẫm đó!"
+];
+
+const DEFAULT_MOVIE_TAGS = [
+  { key: 'anime', label: 'Anime & Hoạt Hình', icon: '🌸', isDefault: true },
+  { key: 'tinhcam', label: 'Tình Cảm & Lãng Mạn', icon: '💖', isDefault: true },
+  { key: 'haihuoc', label: 'Hài Hước & Cười Xỉu', icon: '🤣', isDefault: true },
+  { key: 'kinhdi', label: 'Kinh Dị & Giật Gân', icon: '👻', isDefault: true },
+  { key: 'hanhdong', label: 'Hành Động & Bom Tấn', icon: '💥', isDefault: true },
+  { key: 'tamly', label: 'Tâm Lý & Trinh Thám', icon: '🕵️', isDefault: true },
+  { key: 'chill', label: 'Chữa Lành & Ý Nghĩa', icon: '🍃', isDefault: true }
+];
+
+let movieTags = [];
+
+function loadMovieTags() {
+  const saved = localStorage.getItem('cat_movie_tags_v1');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        movieTags = parsed;
+        return;
+      }
+    } catch (e) {}
+  }
+  movieTags = JSON.parse(JSON.stringify(DEFAULT_MOVIE_TAGS));
+}
+
+function saveMovieTags() {
+  localStorage.setItem('cat_movie_tags_v1', JSON.stringify(movieTags));
+  if (fbDb && !isSyncingFromCloud) {
+    fbDb.ref('movieTags').set(movieTags).catch(e => console.warn('Firebase saveMovieTags error:', e));
+  }
+}
+
+function getMovieTagBadgeHtml(tagKey) {
+  const t = movieTags.find(item => item.key === tagKey);
+  if (!t) return '';
+  return `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800 border border-purple-200 shadow-sm">${t.icon || '🏷️'} ${t.label}</span>`;
+}
+
+const DEFAULT_MOVIES = [
+  { id: 201, name: "Your Name (Kimi no Na wa)", category: "anime", icon: "🌸", platform: "Netflix / Web", duration: "106 phút", movieTags: ["anime", "tinhcam"], desc: "Câu chuyện hoán đổi thân xác vượt không gian & thời gian làm lay động triệu trái tim!" },
+  { id: 202, name: "Spirited Away (Vùng Đất Linh Hồn)", category: "anime", icon: "✨", platform: "Netflix / Web", duration: "125 phút", movieTags: ["anime", "chill"], desc: "Tuyệt tác hoạt hình Ghibli đoạt giải Oscar đưa bạn vào thế giới thần linh huyền ảo!" },
+  { id: 203, name: "La La Land (Những Kẻ Khờ Mộng Mơ)", category: "movie", icon: "🎹", platform: "Netflix / Web", duration: "128 phút", movieTags: ["tinhcam", "chill"], desc: "Bản tình ca ngọt ngào đầy day dứt của hai kẻ mộng mơ giữa lòng Los Angeles hoa lệ!" },
+  { id: 204, name: "About Time (Đã Đến Lúc)", category: "movie", icon: "⏳", platform: "Netflix / Web", duration: "123 phút", movieTags: ["tinhcam", "chill"], desc: "Phim tình cảm du hành thời gian ấm áp nhất, trân trọng từng phút giây bên người thương!" },
+  { id: 205, name: "Ký Sinh Trùng (Parasite)", category: "movie", icon: "🏠", platform: "Netflix / Web", duration: "132 phút", movieTags: ["tamly", "kinhdi"], desc: "Kiệt tác điện ảnh giật gân Hàn Quốc đoạt 4 giải Oscar, plot twist nghẹt thở từng giây!" },
+  { id: 206, name: "Interstellar (Hố Đen Tử Thần)", category: "movie", icon: "🚀", platform: "Netflix / Web", duration: "169 phút", movieTags: ["hanhdong", "tamly"], desc: "Hành trình xuyên vũ trụ kỳ vĩ của Christopher Nolan, chạm đến đỉnh cao tình cha con!" },
+  { id: 207, name: "Avengers: Endgame", category: "movie", icon: "💥", platform: "Disney+ / Web", duration: "181 phút", movieTags: ["hanhdong"], desc: "Trận chiến vĩ đại nhất lịch sử siêu anh hùng Marvel, đỉnh cao cảm xúc bùng nổ!" },
+  { id: 208, name: "The Conjuring (Ám Ảnh Kinh Hoàng)", category: "movie", icon: "👻", platform: "Netflix / Web", duration: "112 phút", movieTags: ["kinhdi"], desc: "Trùm phim kinh dị ghê rợn của James Wan, vừa ôm gối vừa thót tim từng khoảnh khắc!" },
+  { id: 209, name: "Exhuma (Quật Mộ Trùng Ma)", category: "movie", icon: "⚰️", platform: "Chiếu Rạp / Web", duration: "134 phút", movieTags: ["kinhdi", "tamly"], desc: "Hiện tượng phòng vé huyền bí rùng rợn, khai quật ngôi mộ cổ đầy tà thuật rợn tóc gáy!" },
+  { id: 210, name: "Mắt Biếc (Dreamy Eyes)", category: "movie", icon: "🎸", platform: "Netflix / Web", duration: "117 phút", movieTags: ["tinhcam", "chill"], desc: "Chuyện tình đơn phương ngọt ngào mà buồn man mác của Ngạn dành cho Hà Lan xứ Đo Đo!" },
+  { id: 211, name: "Lật Mặt Series (Lý Hải)", category: "movie", icon: "🎬", platform: "Chiếu Rạp / Web", duration: "115 phút", movieTags: ["hanhdong", "haihuoc"], desc: "Phim hành động kịch tính xen lẫn hài hước chuẩn chất bình dân Việt Nam cười thả ga!" },
+  { id: 212, name: "Kung Fu Panda", category: "anime", icon: "🐼", platform: "Netflix / Web", duration: "92 phút", movieTags: ["anime", "haihuoc"], desc: "Gấu trúc Po ham ăn trở thành Thần Long Đại Hiệp, hài hước giải trí cực đỉnh!" },
+  { id: 213, name: "Điều Kỳ Diệu Ở Phòng Giam Số 7", category: "movie", icon: "🎈", platform: "Netflix / Web", duration: "127 phút", movieTags: ["chill", "tamly"], desc: "Câu chuyện tình cha con trong sáng cảm động rơi nước mắt lấy đi triệu khăn giấy!" },
+  { id: 214, name: "Spider-Man: Into the Spider-Verse", category: "anime", icon: "🕷️", platform: "Netflix / Web", duration: "117 phút", movieTags: ["anime", "hanhdong"], desc: "Đỉnh cao đồ họa hoạt hình đa vũ trụ độc nhất vô nhị, phong cách truyện tranh siêu chất!" },
+  { id: 215, name: "Forrest Gump (Cuộc Đời Forrest Gump)", category: "movie", icon: "🍫", platform: "Netflix / Web", duration: "142 phút", movieTags: ["chill", "tamly"], desc: "Cuộc đời như một hộp chocolate, phim truyền cảm hứng vĩ đại giúp chữa lành tâm hồn!" },
+  { id: 216, name: "Mai (Trấn Thành)", category: "movie", icon: "🌸", platform: "Netflix / Chiếu Rạp", duration: "131 phút", movieTags: ["tinhcam", "tamly"], desc: "Kỷ lục phòng vé Việt, câu chuyện tình yêu đầy trăn trở và sâu lắng của người phụ nữ!" },
+  { id: 217, name: "Conan: Nàng Dâu Halloween", category: "anime", icon: "🕵️", platform: "Web / Chiếu Rạp", duration: "111 phút", movieTags: ["anime", "tamly"], desc: "Thám tử nhí lừng danh phá án giải cứu Tokyo với màn hành động nghẹt thở!" },
+  { id: 218, name: "Coco (Vùng Đất Linh Hồn Pixar)", category: "anime", icon: "🎸", platform: "Disney+ / Web", duration: "105 phút", movieTags: ["anime", "chill"], desc: "Hành trình âm nhạc đầy màu sắc về tình cảm gia đình ấm áp, bài hát Remember Me bất hủ!" },
+  { id: 219, name: "Fast & Furious: Tốc Độ & Nguy Hiểm", category: "movie", icon: "🏎️", platform: "Netflix / Web", duration: "130 phút", movieTags: ["hanhdong"], desc: "Những màn đua xe bốc lửa mãn nhãn và triết lý gia đình trên hết cực ngầu!" },
+  { id: 220, name: "Khách Sạn Huyền Bí (Hotel Transylvania)", category: "anime", icon: "🧛", platform: "Netflix / Web", duration: "91 phút", movieTags: ["anime", "haihuoc"], desc: "Bá tước Dracula mở khách sạn cho quái vật nghỉ dưỡng, cười té ghế từ đầu đến cuối!" }
+];
+
+const CAT_MOVIE_QUOTES = [
+  "Hoàng Thượng chốt phim này! Chuẩn bị bắp rang bơ, chăn ấm rồi bật xem ngay thôi!",
+  "Phim này trẫm chấm 100/10! Xem nhớ ôm chặt trẫm không được bỏ rơi nghe chưa!",
+  "Một buổi tối chill chill bên người thương cùng bộ phim này là chuẩn bài rồi Sen!",
+  "Hoàng Thượng phán: Phim này xem cười bể bụng, tan biến hết mệt mỏi deadline!",
+  "Phim đỉnh thế này mà Sen còn chần chừ gì nữa? Bật máy lên ngay đi nào!"
+];
+
+const CAT_MOVIE_FORTUNES = [
+  "Quẻ Phim Đại Cát: Buổi xem phim tràn ngập tiếng cười và khoảnh khắc ngọt ngào! Tay chạm tay, tình cảm nở hoa.",
+  "Quẻ Phim Thượng Cát: Chọn đúng phim siêu cuốn, bắp rang bơ ăn hoài không hết, không lo buồn ngủ!",
+  "Quẻ Phim Lãng Mạn: Rung động ngập tràn, bộ phim giúp hai bạn hiểu nhau và xích lại gần nhau hơn bội phần!",
+  "Quẻ Phim Chữa Lành: Mọi căng thẳng mệt mỏi đều tan biến, nhường chỗ cho cảm giác nhẹ nhõm, bình yên ấm lòng."
 ];
 
 const BALL_GRADIENTS = [
@@ -957,9 +1076,75 @@ function getActivePlacesOrFallback() {
   return places;
 }
 
+let movies = [];
+let currentMovieTag = 'all';
+let currentMoviePlatform = 'all';
+
+function loadMovies() {
+  const saved = localStorage.getItem('cat_movies_list_v1');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        movies = parsed.filter(m => m && typeof m === 'object' && m.name);
+        return;
+      }
+    } catch (e) {}
+  }
+  movies = JSON.parse(JSON.stringify(DEFAULT_MOVIES));
+  localStorage.setItem('cat_movies_list_v1', JSON.stringify(movies));
+}
+
+function saveMovies() {
+  const cleanMovies = movies.filter(m => m && typeof m === 'object' && m.name);
+  localStorage.setItem('cat_movies_list_v1', JSON.stringify(cleanMovies));
+  if (fbDb && !isSyncingFromCloud) {
+    setCloudSyncStatus('syncing', 'Đang lưu...');
+    fbDb.ref('movies').set(cleanMovies)
+      .then(() => setCloudSyncStatus('connected', 'Đồng bộ nhóm'))
+      .catch(e => {
+        console.warn('Firebase saveMovies error:', e);
+        setCloudSyncStatus('connected', 'Lưu trên máy');
+      });
+  }
+  const badgeCount = document.getElementById('foods-badge-count');
+  if (badgeCount && appMode === 'movie') badgeCount.textContent = cleanMovies.length;
+}
+
+function getFilteredMovies() {
+  return movies.filter(movie => {
+    // 1. Filter by Movie Genre Tag
+    if (currentMovieTag !== 'all') {
+      const tags = movie.movieTags || [];
+      if (!tags.includes(currentMovieTag) && movie.category !== currentMovieTag) {
+        return false;
+      }
+    }
+    // 2. Filter by Platform / Duration
+    if (currentMoviePlatform === 'cinema') {
+      if (!movie.platform || !movie.platform.toLowerCase().includes('rạp')) return false;
+    } else if (currentMoviePlatform === 'netflix') {
+      if (!movie.platform || (!movie.platform.toLowerCase().includes('netflix') && !movie.platform.toLowerCase().includes('web'))) return false;
+    } else if (currentMoviePlatform === 'short') {
+      const dur = parseInt(movie.duration, 10) || 120;
+      if (dur > 100) return false;
+    }
+    return true;
+  });
+}
+
+function getActiveMoviesOrFallback() {
+  const list = getFilteredMovies();
+  if (list.length > 0) return list;
+  return movies;
+}
+
 function getActiveItemsOrFallback() {
   if (appMode === 'place') {
     return getActivePlacesOrFallback();
+  }
+  if (appMode === 'movie') {
+    return getActiveMoviesOrFallback();
   }
   return getActiveFoodsOrFallback();
 }
@@ -1030,7 +1215,7 @@ function showResultModal(item) {
     foodImgContainer.classList.remove('hidden');
     foodIcon.classList.add('hidden');
   } else {
-    foodIcon.textContent = item.icon || (appMode === 'place' ? '📍' : '🍱');
+    foodIcon.textContent = item.icon || (appMode === 'place' ? '📍' : (appMode === 'movie' ? '🎬' : '🍱'));
     foodIcon.classList.remove('hidden');
     foodImgContainer.classList.add('hidden');
   }
@@ -1050,6 +1235,20 @@ function showResultModal(item) {
     }
     if (acceptBtnText) acceptBtnText.textContent = '🚀 Chốt Chỗ Này, Đi Ngay Thôi!';
     if (retryBtnText) retryBtnText.textContent = '🐾 Sen Muốn Đổi Chỗ Khác!';
+  } else if (appMode === 'movie') {
+    foodDesc.textContent = item.desc || 'Bộ phim siêu cuốn hút cho buổi xem phim hôm nay!';
+    catSpeech.textContent = CAT_MOVIE_QUOTES[Math.floor(Math.random() * CAT_MOVIE_QUOTES.length)];
+    if (resultFoodPrice) {
+      const plat = item.platform || 'Phim hay';
+      const dur = item.duration || '100p';
+      resultFoodPrice.innerHTML = `🎬 <b>${plat}</b> • ⏱️ ${dur}`;
+    }
+    if (resultFoodTags) {
+      const tags = (item.movieTags && item.movieTags.length) ? item.movieTags : ['anime'];
+      resultFoodTags.innerHTML = tags.map(getMovieTagBadgeHtml).join(' ');
+    }
+    if (acceptBtnText) acceptBtnText.textContent = '🍿 Chốt Phim Này, Bật Xem Thôi!';
+    if (retryBtnText) retryBtnText.textContent = '🐾 Sen Muốn Đổi Phim Khác!';
   } else {
     foodDesc.textContent = item.desc || 'Món ăn siêu hấp dẫn cho ngày hôm nay!';
     catSpeech.textContent = CAT_QUOTES[Math.floor(Math.random() * CAT_QUOTES.length)];
@@ -1185,13 +1384,13 @@ function setupClawMachine() {
       ball.style.transform = `rotate(${slot.rot}deg)`;
 
       ball.setAttribute('data-food-name', item.name);
-      ball.setAttribute('data-food-icon', item.icon || (appMode === 'place' ? '📍' : '🍱'));
+      ball.setAttribute('data-food-icon', item.icon || (appMode === 'place' ? '📍' : (appMode === 'movie' ? '🎬' : '🍱')));
       ball.setAttribute('data-grad', grad.bg);
 
-      // Miniature price badge
+      // Miniature price / duration badge
       const shortPrice = appMode === 'place'
         ? (Number(item.cost) === 0 ? 'Free' : getPriceShort(item.cost))
-        : getPriceShort(item.price);
+        : (appMode === 'movie' ? (item.duration ? item.duration.replace(' phút', 'p') : 'Phim') : getPriceShort(item.price));
 
       if (item.image) {
         ball.innerHTML = `
@@ -1203,7 +1402,7 @@ function setupClawMachine() {
         `;
       } else {
         ball.innerHTML = `
-          <span class="text-xl filter drop-shadow select-none leading-none pointer-events-none">${item.icon || (appMode === 'place' ? '📍' : '🍱')}</span>
+          <span class="text-xl filter drop-shadow select-none leading-none pointer-events-none">${item.icon || (appMode === 'place' ? '📍' : (appMode === 'movie' ? '🎬' : '🍱'))}</span>
           <div class="flex items-center justify-center gap-0.5 mt-0.5 pointer-events-none">
             <span class="text-[7.5px] font-black text-white bg-black/50 px-1 rounded-full line-clamp-1 max-w-[32px] text-center leading-tight">${item.name.split(' ')[0]}</span>
             <span class="text-[6.5px] font-black text-stone-900 bg-amber-400 px-1 rounded-full leading-tight shadow-sm">${shortPrice}</span>
@@ -1304,11 +1503,11 @@ function setupClawMachine() {
       if (winningFood.image) {
         heldFoodContent.innerHTML = `<img src="${winningFood.image}" class="w-8 h-8 rounded-full object-cover shadow-sm border border-white">`;
       } else {
-        heldFoodContent.innerHTML = `<span class="text-2xl filter drop-shadow">${winningFood.icon || (appMode === 'place' ? '📍' : '🍱')}</span>`;
+        heldFoodContent.innerHTML = `<span class="text-2xl filter drop-shadow">${winningFood.icon || (appMode === 'place' ? '📍' : (appMode === 'movie' ? '🎬' : '🍱'))}</span>`;
       }
       const displayPrice = appMode === 'place'
         ? (Number(winningFood.cost) === 0 ? 'Miễn phí' : formatPrice(winningFood.cost))
-        : formatPrice(winningFood.price);
+        : (appMode === 'movie' ? (winningFood.duration || 'Phim hay') : formatPrice(winningFood.price));
       heldFoodLabel.textContent = `${winningFood.name} (${displayPrice})`;
       heldClawBall.style.background = grad;
       heldClawBall.classList.remove('hidden');
@@ -1382,7 +1581,7 @@ function createSlotReelItemHtml(food, height) {
   }
   return `
     <div class="w-full flex items-center justify-center flex-shrink-0" style="height: ${height}px;">
-      <span class="text-3xl md:text-4xl filter drop-shadow pointer-events-none select-none leading-none">${(food && food.icon) || (appMode === 'place' ? '📍' : '🍱')}</span>
+      <span class="text-3xl md:text-4xl filter drop-shadow pointer-events-none select-none leading-none">${(food && food.icon) || (appMode === 'place' ? '📍' : (appMode === 'movie' ? '🎬' : '🍱'))}</span>
     </div>
   `;
 }
@@ -1623,17 +1822,21 @@ function setupOmikuji() {
     // Pick the winning item and prepare card
     tl.call(() => {
       const winningFood = getRandomItem();
-      const fortunePool = appMode === 'place' ? CAT_PLACE_FORTUNES : CAT_TAROT_FORTUNES;
+      const fortunePool = appMode === 'place'
+        ? CAT_PLACE_FORTUNES
+        : (appMode === 'movie' ? CAT_MOVIE_FORTUNES : CAT_TAROT_FORTUNES);
       const fortune = fortunePool[Math.floor(Math.random() * fortunePool.length)];
 
       if (tarotFoodName) tarotFoodName.textContent = winningFood.name;
-      if (tarotFortuneText) tarotFortuneText.textContent = fortune;
+      if (tarotFortuneText) tarotFortuneText.textContent = fortune.fortune || fortune;
       const tarotFoodPrice = document.getElementById('tarot-food-price');
       const tarotFoodTag = document.getElementById('tarot-food-tag');
       if (tarotFoodPrice) {
         if (appMode === 'place') {
           const costVal = Number(winningFood.cost) || 0;
           tarotFoodPrice.textContent = costVal === 0 ? 'Miễn phí' : formatPrice(costVal);
+        } else if (appMode === 'movie') {
+          tarotFoodPrice.textContent = winningFood.duration || 'Phim hay';
         } else {
           tarotFoodPrice.textContent = formatPrice(winningFood.price);
         }
@@ -1643,6 +1846,10 @@ function setupOmikuji() {
           const firstTag = (winningFood.placeTags && winningFood.placeTags[0]) || 'chill';
           const tagObj = placeTags.find(t => t.key === firstTag) || placeTags[0] || { icon: '📍', label: 'Đi chơi' };
           tarotFoodTag.textContent = `${tagObj.icon || '📍'} ${tagObj.label}`;
+        } else if (appMode === 'movie') {
+          const firstTag = (winningFood.movieTags && winningFood.movieTags[0]) || 'anime';
+          const tagObj = movieTags.find(t => t.key === firstTag) || movieTags[0] || { icon: '🎬', label: 'Phim' };
+          tarotFoodTag.textContent = `${tagObj.icon || '🎬'} ${tagObj.label}`;
         } else {
           const firstTag = (winningFood.mealTimes && winningFood.mealTimes[0]) || 'trua';
           const tagObj = mealTags.find(t => t.key === firstTag) || mealTags[1] || { icon: '🍱', label: 'Bữa trưa' };
@@ -1653,7 +1860,7 @@ function setupOmikuji() {
         if (winningFood.image) {
           tarotFoodImgContainer.innerHTML = `<img src="${winningFood.image}" alt="${winningFood.name}" class="w-full h-full object-cover">`;
         } else {
-          tarotFoodImgContainer.innerHTML = `<span class="text-4xl sm:text-5xl filter drop-shadow select-none">${winningFood.icon || (appMode === 'place' ? '📍' : '🍱')}</span>`;
+          tarotFoodImgContainer.innerHTML = `<span class="text-4xl sm:text-5xl filter drop-shadow select-none">${winningFood.icon || (appMode === 'place' ? '📍' : (appMode === 'movie' ? '🎬' : '🍱'))}</span>`;
         }
       }
 
@@ -2575,6 +2782,239 @@ function initPlacesManager() {
   renderModalPlaceTags();
 }
 
+// --- 11C. MOVIES MANAGER LOGIC ---
+let editingMovieId = null;
+
+function renderMovieList() {
+  const listContainer = document.getElementById('movies-list-items');
+  const modalTabCount = document.getElementById('modal-movies-tab-count');
+  if (modalTabCount) modalTabCount.textContent = movies.length;
+  if (typeof window.renderPublicMenuModal === 'function') window.renderPublicMenuModal();
+  if (!listContainer) return;
+  listContainer.innerHTML = '';
+
+  movies.forEach(movie => {
+    const item = document.createElement('div');
+    item.className = 'flex items-center justify-between p-2.5 bg-purple-50/70 rounded-2xl border border-purple-200 hover:bg-purple-100/60 transition-all';
+
+    const tagsHtml = ((movie.movieTags && movie.movieTags.length) ? movie.movieTags : ['anime']).map(getMovieTagBadgeHtml).join(' ');
+
+    item.innerHTML = `
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">${movie.icon || '🎬'}</span>
+        <div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <p class="font-extrabold text-stone-800 text-sm">${escapeHtml(movie.name)}</p>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300 shadow-sm">${escapeHtml(movie.platform || 'Web')} • ${escapeHtml(movie.duration || '100p')}</span>
+          </div>
+          <div class="flex items-center gap-1 mt-0.5 flex-wrap">
+            ${tagsHtml}
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center space-x-1 flex-shrink-0">
+        <button data-id="${movie.id}" class="btn-edit-movie w-8 h-8 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 flex items-center justify-center transition-colors" title="Chỉnh sửa phim này">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        </button>
+        <button data-id="${movie.id}" class="btn-delete-movie w-8 h-8 rounded-full bg-rose-100 text-rose-500 hover:bg-rose-200 flex items-center justify-center transition-colors" title="Xóa phim">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+      </div>
+    `;
+    listContainer.appendChild(item);
+  });
+
+  // Wire edit movie buttons
+  listContainer.querySelectorAll('.btn-edit-movie').forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      const target = movies.find(m => m.id === id);
+      if (!target) return;
+      editingMovieId = id;
+      const nameInput = document.getElementById('new-movie-name');
+      const platformSelect = document.getElementById('new-movie-platform');
+      const durationInput = document.getElementById('new-movie-duration');
+      const iconSelect = document.getElementById('new-movie-icon');
+      const titleEl = document.getElementById('movie-form-title');
+      const cancelBtn = document.getElementById('btn-cancel-edit-movie');
+
+      if (nameInput) nameInput.value = target.name;
+      if (durationInput) durationInput.value = target.duration || '105 phút';
+      if (iconSelect) iconSelect.value = target.icon || '🎬';
+      renderModalMovieTags(target.movieTags || ['anime']);
+
+      if (titleEl) titleEl.innerHTML = `<span>✏️</span> <span>Sửa phim: <b class="text-purple-600">${escapeHtml(target.name)}</b></span>`;
+      const addBtn = document.getElementById('btn-add-movie');
+      if (addBtn) addBtn.textContent = '💾 Lưu Cập Nhật';
+      if (cancelBtn) cancelBtn.classList.remove('hidden');
+      audio.playPop();
+    };
+  });
+
+  // Wire delete movie buttons
+  listContainer.querySelectorAll('.btn-delete-movie').forEach(btn => {
+    btn.onclick = async () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      if (movies.length <= 1) {
+        showCatToast("Hoàng Thượng yêu cầu giữ lại ít nhất 1 bộ phim để xem nha Sen!", "warn");
+        return;
+      }
+      const target = movies.find(m => m.id === id);
+      const movieName = target ? target.name : 'bộ phim này';
+      const ok = await showCatConfirm(`Sen có chắc chắn muốn xóa bộ phim "<b>${escapeHtml(movieName)}</b>" không? 😿`, "Xác Nhận Xóa Phim?", "🎬", "Xóa Phim 🐾");
+      if (!ok) return;
+
+      movies = movies.filter(m => m.id !== id);
+      saveMovies();
+      renderMovieList();
+      updateActiveMovieFilterCount();
+      if (appMode === 'movie') {
+        setupClawMachine();
+        setupSlotMachine();
+      }
+      audio.playPop();
+      showCatToast(`Đã xóa phim "${movieName}"!`, 'delete');
+    };
+  });
+}
+
+function renderModalMovieTags(selectedKeys = null) {
+  const container = document.getElementById('modal-movie-tags-container');
+  if (!container) return;
+
+  if (!selectedKeys) {
+    const currentActive = Array.from(container.querySelectorAll('.modal-movie-tag-chip.active-chip')).map(c => c.getAttribute('data-tag'));
+    selectedKeys = currentActive.length > 0 ? currentActive : (movieTags.slice(0, 2).map(t => t.key));
+  }
+
+  container.innerHTML = '';
+  movieTags.forEach(t => {
+    const isSelected = selectedKeys.includes(t.key);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `modal-movie-tag-chip ${isSelected ? 'active-chip bg-purple-600 text-white shadow-xs' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'} px-2 py-0.5 rounded-lg text-[11px] font-bold relative inline-flex items-center gap-0.5 transition-all`;
+    chip.setAttribute('data-tag', t.key);
+
+    chip.innerHTML = `<span>${t.icon || '🏷️'} ${t.label}</span>`;
+    chip.onclick = () => {
+      audio.playPop();
+      if (chip.classList.contains('active-chip')) {
+        chip.classList.remove('active-chip', 'bg-purple-600', 'text-white', 'shadow-xs');
+        chip.classList.add('bg-stone-100', 'text-stone-600');
+      } else {
+        chip.classList.add('active-chip', 'bg-purple-600', 'text-white', 'shadow-xs');
+        chip.classList.remove('bg-stone-100', 'text-stone-600');
+      }
+    };
+    container.appendChild(chip);
+  });
+}
+
+function initMoviesManager() {
+  const addBtn = document.getElementById('btn-add-movie');
+  const nameInput = document.getElementById('new-movie-name');
+  const platformSelect = document.getElementById('new-movie-platform');
+  const durationInput = document.getElementById('new-movie-duration');
+  const iconSelect = document.getElementById('new-movie-icon');
+  const titleEl = document.getElementById('movie-form-title');
+  const cancelBtn = document.getElementById('btn-cancel-edit-movie');
+  const resetBtn = document.getElementById('btn-reset-default-movies');
+
+  function cancelMovieEdit() {
+    editingMovieId = null;
+    if (nameInput) nameInput.value = '';
+    if (titleEl) titleEl.innerHTML = `<span>➕</span> <span>Thêm bộ phim mới vào kho:</span>`;
+    if (addBtn) addBtn.textContent = 'Thêm Phim';
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+    renderModalMovieTags(['anime']);
+    audio.playPop();
+  }
+
+  if (cancelBtn) cancelBtn.onclick = cancelMovieEdit;
+
+  if (addBtn) {
+    addBtn.onclick = () => {
+      const name = nameInput ? nameInput.value.trim() : '';
+      if (!name) {
+        if (nameInput) nameInput.focus();
+        return;
+      }
+
+      const platformVal = platformSelect ? (platformSelect.options[platformSelect.selectedIndex].text) : 'Netflix / Web';
+      const durationVal = durationInput && durationInput.value.trim() ? durationInput.value.trim() : '105 phút';
+      const iconVal = iconSelect ? iconSelect.value : '🎬';
+      const activeChips = Array.from(document.querySelectorAll('.modal-movie-tag-chip.active-chip')).map(c => c.getAttribute('data-tag'));
+      const activeTags = activeChips.length > 0 ? activeChips : ['anime'];
+
+      if (editingMovieId !== null) {
+        const idx = movies.findIndex(m => m.id === editingMovieId);
+        if (idx !== -1) {
+          movies[idx].name = name;
+          movies[idx].platform = platformVal;
+          movies[idx].duration = durationVal;
+          movies[idx].icon = iconVal;
+          movies[idx].movieTags = activeTags;
+          saveMovies();
+          renderMovieList();
+          cancelMovieEdit();
+          updateActiveMovieFilterCount();
+          if (appMode === 'movie') {
+            setupClawMachine();
+            setupSlotMachine();
+          }
+          showCatToast(`Đã cập nhật phim "${name}" thành công! ✨`, 'edit');
+        }
+      } else {
+        const newMovie = {
+          id: Date.now(),
+          name: name,
+          platform: platformVal,
+          duration: durationVal,
+          icon: iconVal,
+          movieTags: activeTags,
+          category: activeTags[0] || 'anime',
+          desc: "Bộ phim tuyệt đỉnh do chính Sen thêm vào kho phim Hoàng Thượng!"
+        };
+        movies.unshift(newMovie);
+        saveMovies();
+        nameInput.value = '';
+        renderMovieList();
+        renderModalMovieTags(['anime']);
+        updateActiveMovieFilterCount();
+        if (appMode === 'movie') {
+          setupClawMachine();
+          setupSlotMachine();
+        }
+        audio.playBellDing();
+        showCatToast(`Đã thêm phim "${name}" vào kho phim! 🎬`, 'success');
+      }
+    };
+  }
+
+  if (resetBtn) {
+    resetBtn.onclick = async () => {
+      const ok = await showCatConfirm("Sen có chắc muốn khôi phục về danh sách <b>20 bộ phim</b> ban đầu không?", "Khôi Phục Kho Phim?", "🔄", "Khôi Phục 🐾");
+      if (ok) {
+        movies = JSON.parse(JSON.stringify(DEFAULT_MOVIES));
+        saveMovies();
+        cancelMovieEdit();
+        renderMovieList();
+        renderModalMovieTags(['anime']);
+        updateActiveMovieFilterCount();
+        if (appMode === 'movie') {
+          setupClawMachine();
+          setupSlotMachine();
+        }
+        audio.playMeow();
+        showCatToast("Đã khôi phục danh sách 20 bộ phim ban đầu! 🔄", "edit");
+      }
+    };
+  }
+
+  renderMovieList();
+  renderModalMovieTags();
+}
+
 function updateSuggestionsTabCount() {
   const badge = document.getElementById('modal-suggestions-tab-count');
   if (badge) badge.textContent = suggestions.length;
@@ -2676,11 +3116,13 @@ function renderSuggestionsList() {
 function initModalTabs() {
   const tabFoods = document.getElementById('modal-tab-foods');
   const tabPlaces = document.getElementById('modal-tab-places');
+  const tabMovies = document.getElementById('modal-tab-movies');
   const tabWishlist = document.getElementById('modal-tab-wishlist');
   const tabSuggestions = document.getElementById('modal-tab-suggestions');
 
   const secFoods = document.getElementById('modal-foods-section');
   const secPlaces = document.getElementById('modal-places-section');
+  const secMovies = document.getElementById('modal-movies-section');
   const secWishlist = document.getElementById('modal-wishlist-section');
   const secSuggestions = document.getElementById('modal-suggestions-section');
 
@@ -2696,7 +3138,7 @@ function initModalTabs() {
   }
 
   function setTabActive(activeTab) {
-    [tabFoods, tabPlaces, tabWishlist, tabSuggestions].forEach(tab => {
+    [tabFoods, tabPlaces, tabMovies, tabWishlist, tabSuggestions].forEach(tab => {
       if (!tab) return;
       if (tab === activeTab) {
         tab.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate';
@@ -2712,6 +3154,7 @@ function initModalTabs() {
       setTabActive(tabFoods);
       if (secFoods) { secFoods.classList.remove('hidden'); secFoods.classList.add('flex'); }
       if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      if (secMovies) { secMovies.classList.add('hidden'); secMovies.classList.remove('flex'); }
       if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
       if (secSuggestions) { secSuggestions.classList.add('hidden'); secSuggestions.classList.remove('flex'); }
     };
@@ -2723,10 +3166,25 @@ function initModalTabs() {
       setTabActive(tabPlaces);
       if (secPlaces) { secPlaces.classList.remove('hidden'); secPlaces.classList.add('flex'); }
       if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
+      if (secMovies) { secMovies.classList.add('hidden'); secMovies.classList.remove('flex'); }
       if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
       if (secSuggestions) { secSuggestions.classList.add('hidden'); secSuggestions.classList.remove('flex'); }
       renderPlaceList();
       renderModalPlaceTags();
+    };
+  }
+
+  if (tabMovies) {
+    tabMovies.onclick = () => {
+      audio.playPop();
+      setTabActive(tabMovies);
+      if (secMovies) { secMovies.classList.remove('hidden'); secMovies.classList.add('flex'); }
+      if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
+      if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
+      if (secSuggestions) { secSuggestions.classList.add('hidden'); secSuggestions.classList.remove('flex'); }
+      renderMovieList();
+      renderModalMovieTags();
     };
   }
 
@@ -2737,6 +3195,7 @@ function initModalTabs() {
       if (secWishlist) { secWishlist.classList.remove('hidden'); secWishlist.classList.add('flex'); }
       if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
       if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      if (secMovies) { secMovies.classList.add('hidden'); secMovies.classList.remove('flex'); }
       if (secSuggestions) { secSuggestions.classList.add('hidden'); secSuggestions.classList.remove('flex'); }
       updateModalWishlistStats();
     };
@@ -2749,6 +3208,7 @@ function initModalTabs() {
       if (secSuggestions) { secSuggestions.classList.remove('hidden'); secSuggestions.classList.add('flex'); }
       if (secFoods) { secFoods.classList.add('hidden'); secFoods.classList.remove('flex'); }
       if (secPlaces) { secPlaces.classList.add('hidden'); secPlaces.classList.remove('flex'); }
+      if (secMovies) { secMovies.classList.add('hidden'); secMovies.classList.remove('flex'); }
       if (secWishlist) { secWishlist.classList.add('hidden'); secWishlist.classList.remove('flex'); }
       renderSuggestionsList();
     };
@@ -2923,11 +3383,14 @@ function initPublicMenuModal() {
   const btnCloseBottom = document.getElementById('btn-close-public-menu-btn');
   const btnQuickFood = document.getElementById('btn-quick-view-menu-food');
   const btnQuickPlace = document.getElementById('btn-quick-view-menu-place');
+  const btnQuickMovie = document.getElementById('btn-quick-view-menu-movie');
 
   const tabFoods = document.getElementById('public-menu-tab-foods');
   const tabPlaces = document.getElementById('public-menu-tab-places');
+  const tabMovies = document.getElementById('public-menu-tab-movies');
   const countFoodsEl = document.getElementById('public-menu-foods-count');
   const countPlacesEl = document.getElementById('public-menu-places-count');
+  const countMoviesEl = document.getElementById('public-menu-movies-count');
   const visibleCountEl = document.getElementById('public-menu-visible-count');
   const countInfoEl = document.getElementById('public-menu-count-info');
 
@@ -2936,7 +3399,7 @@ function initPublicMenuModal() {
   const itemsGrid = document.getElementById('public-menu-items-grid');
   const emptyState = document.getElementById('public-menu-empty');
 
-  let currentTab = 'food'; // 'food' or 'place'
+  let currentTab = 'food'; // 'food' | 'place' | 'movie'
 
   function updateCategoryOptions() {
     if (!categoryFilter) return;
@@ -2945,7 +3408,13 @@ function initPublicMenuModal() {
 
     const defaultOpt = document.createElement('option');
     defaultOpt.value = 'all';
-    defaultOpt.textContent = currentTab === 'food' ? '🌟 Tất cả món ăn' : '🌟 Tất cả địa điểm';
+    if (currentTab === 'food') {
+      defaultOpt.textContent = '🌟 Tất cả món ăn';
+    } else if (currentTab === 'place') {
+      defaultOpt.textContent = '🌟 Tất cả địa điểm';
+    } else {
+      defaultOpt.textContent = '🌟 Tất cả thể loại phim';
+    }
     categoryFilter.appendChild(defaultOpt);
 
     if (currentTab === 'food') {
@@ -2955,8 +3424,15 @@ function initPublicMenuModal() {
         opt.textContent = `${t.icon || '🏷️'} ${t.label}`;
         categoryFilter.appendChild(opt);
       });
-    } else {
+    } else if (currentTab === 'place') {
       placeTags.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.key;
+        opt.textContent = `${t.icon || '🏷️'} ${t.label}`;
+        categoryFilter.appendChild(opt);
+      });
+    } else {
+      movieTags.forEach(t => {
         const opt = document.createElement('option');
         opt.value = t.key;
         opt.textContent = `${t.icon || '🏷️'} ${t.label}`;
@@ -2979,6 +3455,7 @@ function initPublicMenuModal() {
     // Update tab badges
     if (countFoodsEl) countFoodsEl.textContent = foods.length;
     if (countPlacesEl) countPlacesEl.textContent = places.length;
+    if (countMoviesEl) countMoviesEl.textContent = movies.length;
 
     itemsGrid.innerHTML = '';
 
@@ -3036,7 +3513,7 @@ function initPublicMenuModal() {
         });
       }
 
-    } else {
+    } else if (currentTab === 'place') {
       // PLACES TAB
       const filtered = places.filter(place => {
         const matchQuery = !query ||
@@ -3090,6 +3567,58 @@ function initPublicMenuModal() {
           itemsGrid.appendChild(card);
         });
       }
+    } else {
+      // MOVIES TAB
+      const filtered = movies.filter(movie => {
+        const matchQuery = !query ||
+          movie.name.toLowerCase().includes(query) ||
+          (movie.platform && movie.platform.toLowerCase().includes(query)) ||
+          (movie.movieTags && movie.movieTags.some(t => t.toLowerCase().includes(query)));
+
+        const matchCategory = selectedCategory === 'all' ||
+          (movie.movieTags && movie.movieTags.includes(selectedCategory)) ||
+          movie.category === selectedCategory;
+
+        return matchQuery && matchCategory;
+      });
+
+      if (visibleCountEl) visibleCountEl.textContent = filtered.length;
+      if (countInfoEl) {
+        countInfoEl.innerHTML = `Hiển thị <b class="text-purple-600 font-black">${filtered.length}</b> bộ phim`;
+      }
+
+      if (filtered.length === 0) {
+        if (emptyState) emptyState.classList.remove('hidden');
+        itemsGrid.classList.add('hidden');
+      } else {
+        if (emptyState) emptyState.classList.add('hidden');
+        itemsGrid.classList.remove('hidden');
+
+        filtered.forEach(movie => {
+          const card = document.createElement('div');
+          card.className = 'flex items-center gap-2.5 p-2.5 bg-purple-50/60 hover:bg-purple-100/70 rounded-2xl border border-purple-200/90 transition-all hover:shadow-xs';
+
+          const tagsHtml = ((movie.movieTags && movie.movieTags.length) ? movie.movieTags : ['anime']).map(getMovieTagBadgeHtml).join(' ');
+
+          card.innerHTML = `
+            <div class="w-12 h-12 rounded-xl bg-white border border-purple-200 flex items-center justify-center text-2xl flex-shrink-0 shadow-2xs">
+              ${movie.icon || '🎬'}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-1 flex-wrap">
+                <h4 class="font-extrabold text-stone-800 text-xs sm:text-sm truncate" title="${escapeHtml(movie.name)}">${escapeHtml(movie.name)}</h4>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-900 border border-purple-300 shadow-2xs">
+                  ${escapeHtml(movie.platform || 'Web')} • ${escapeHtml(movie.duration || '100p')}
+                </span>
+              </div>
+              <div class="flex items-center gap-1 mt-1 flex-wrap">
+                ${tagsHtml}
+              </div>
+            </div>
+          `;
+          itemsGrid.appendChild(card);
+        });
+      }
     }
   }
 
@@ -3098,11 +3627,18 @@ function initPublicMenuModal() {
     if (tab === 'food') {
       tabFoods.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate cursor-pointer';
       tabPlaces.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
+      if (tabMovies) tabMovies.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
       if (searchInput) searchInput.placeholder = 'Tìm tên món ăn (phở, bún, trà sữa...)...';
-    } else {
+    } else if (tab === 'place') {
       tabPlaces.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-amber-700 shadow-sm truncate cursor-pointer';
       tabFoods.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
+      if (tabMovies) tabMovies.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
       if (searchInput) searchInput.placeholder = 'Tìm địa điểm vui chơi (hồ tây, cafe, rạp phim...)...';
+    } else {
+      if (tabMovies) tabMovies.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-purple-700 shadow-sm truncate cursor-pointer';
+      tabFoods.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
+      tabPlaces.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate cursor-pointer';
+      if (searchInput) searchInput.placeholder = 'Tìm tên phim (Your Name, Mai, Conan, Ký Sinh Trùng...)...';
     }
     updateCategoryOptions();
     renderItems();
@@ -3110,7 +3646,7 @@ function initPublicMenuModal() {
 
   function open(preferredTab) {
     audio.playPop();
-    const tabToOpen = preferredTab || (appMode === 'place' ? 'place' : 'food');
+    const tabToOpen = preferredTab || (appMode === 'place' ? 'place' : (appMode === 'movie' ? 'movie' : 'food'));
     setTab(tabToOpen);
 
     modal.classList.remove('hidden');
@@ -3133,11 +3669,13 @@ function initPublicMenuModal() {
   if (btnOpenHeader) btnOpenHeader.onclick = () => open();
   if (btnQuickFood) btnQuickFood.onclick = () => open('food');
   if (btnQuickPlace) btnQuickPlace.onclick = () => open('place');
+  if (btnQuickMovie) btnQuickMovie.onclick = () => open('movie');
   if (btnClose) btnClose.onclick = close;
   if (btnCloseBottom) btnCloseBottom.onclick = close;
 
   if (tabFoods) tabFoods.onclick = () => { audio.playPop(); setTab('food'); };
   if (tabPlaces) tabPlaces.onclick = () => { audio.playPop(); setTab('place'); };
+  if (tabMovies) tabMovies.onclick = () => { audio.playPop(); setTab('movie'); };
 
   if (searchInput) searchInput.oninput = renderItems;
   if (categoryFilter) categoryFilter.onchange = renderItems;
@@ -3293,9 +3831,83 @@ function updateActivePlaceFilterCount() {
   if (countNum) countNum.textContent = filtered.length;
   if (statusText) {
     if (filtered.length > 0) {
-      statusText.innerHTML = `🐾 Đang có <b class="text-amber-600 font-black text-xs">${filtered.length}</b> địa điểm phù hợp để đi chơi`;
+      statusText.innerHTML = `🐾 Đang có <b class="text-amber-600 font-black text-xs" id="filtered-place-count-num">${filtered.length}</b> địa điểm phù hợp để đi chơi`;
     } else {
       statusText.innerHTML = `⚠️ <span class="text-amber-700 font-bold">Không có địa điểm nào đúng tiêu chí này! Tạm thời quay trên tất cả địa điểm nha Sen.</span>`;
+    }
+  }
+}
+
+// --- 12B1. MOVIE FILTERS (BỘ LỌC PHIM) ---
+function renderMovieFilterButtons() {
+  const container = document.getElementById('movie-filter-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const allBtn = document.createElement('button');
+  allBtn.setAttribute('data-movietag', 'all');
+  allBtn.className = `movie-filter-btn ${currentMovieTag === 'all' ? 'active-filter' : ''} px-3 py-1 rounded-full text-xs font-black transition-all`;
+  allBtn.innerHTML = '🌟 Tất cả';
+  allBtn.onclick = () => selectMovieFilter('all');
+  container.appendChild(allBtn);
+
+  movieTags.forEach(t => {
+    const btn = document.createElement('button');
+    btn.setAttribute('data-movietag', t.key);
+    btn.className = `movie-filter-btn ${currentMovieTag === t.key ? 'active-filter' : ''} px-3 py-1 rounded-full text-xs font-bold transition-all`;
+    btn.innerHTML = `${t.icon || '🏷️'} ${t.label}`;
+    btn.onclick = () => selectMovieFilter(t.key);
+    container.appendChild(btn);
+  });
+}
+
+function selectMovieFilter(tagKey) {
+  audio.playPop();
+  currentMovieTag = tagKey;
+  renderMovieFilterButtons();
+  updateActiveMovieFilterCount();
+  if (appMode === 'movie') {
+    setupClawMachine();
+    setupSlotMachine();
+  }
+}
+
+function initMovieFilters() {
+  renderMovieFilterButtons();
+
+  const platBtns = document.querySelectorAll('.movie-platform-btn');
+  platBtns.forEach(btn => {
+    btn.onclick = () => {
+      audio.playPop();
+      currentMoviePlatform = btn.getAttribute('data-movieplatform');
+      platBtns.forEach(b => {
+        if (b.getAttribute('data-movieplatform') === currentMoviePlatform) {
+          b.classList.add('active-cost-filter');
+        } else {
+          b.classList.remove('active-cost-filter');
+        }
+      });
+      updateActiveMovieFilterCount();
+      if (appMode === 'movie') {
+        setupClawMachine();
+        setupSlotMachine();
+      }
+    };
+  });
+
+  updateActiveMovieFilterCount();
+}
+
+function updateActiveMovieFilterCount() {
+  const filtered = getFilteredMovies();
+  const countNum = document.getElementById('filtered-movie-count-num');
+  const statusText = document.getElementById('movie-filter-status-text');
+  if (countNum) countNum.textContent = filtered.length;
+  if (statusText) {
+    if (filtered.length > 0) {
+      statusText.innerHTML = `🐾 Đang có <b class="text-purple-600 font-black text-xs" id="filtered-movie-count-num">${filtered.length}</b> bộ phim phù hợp để xem`;
+    } else {
+      statusText.innerHTML = `⚠️ <span class="text-purple-700 font-bold">Không có bộ phim nào đúng tiêu chí này! Tạm thời quay trên tất cả phim nha Sen.</span>`;
     }
   }
 }
@@ -3889,7 +4501,7 @@ function escapeHtml(str) {
   });
 }
 
-// --- 12C. PURPOSE SWITCHER (ĂN GÌ? VS ĐI ĐÂU ZA? VS MÌNH ĐI CHỖ NÀY NHA) ---
+// --- 12C. PURPOSE SWITCHER (ĂN GÌ? VS ĐI ĐÂU ZA? VS XEM PHIM GÌ ZA? VS MÌNH ĐI CHỖ NÀY NHA) ---
 function setAppMode(mode) {
   if (appMode === mode) return;
   appMode = mode;
@@ -3897,9 +4509,13 @@ function setAppMode(mode) {
 
   const foodSwitchBtn = document.getElementById('mode-switch-food');
   const placeSwitchBtn = document.getElementById('mode-switch-place');
+  const movieSwitchBtn = document.getElementById('mode-switch-movie');
   const wishlistSwitchBtn = document.getElementById('mode-switch-wishlist');
+
   const foodFilters = document.getElementById('filter-bar-food');
   const placeFilters = document.getElementById('filter-bar-place');
+  const movieFilters = document.getElementById('filter-bar-movie');
+
   const gameTabsContainer = document.getElementById('game-tabs-container');
   const gameArenaContainer = document.getElementById('game-arena-container');
   const wishlistView = document.getElementById('view-couple-wishlist');
@@ -3913,15 +4529,14 @@ function setAppMode(mode) {
     // Mode: Mình Đi Chỗ Này Nha (No Gacha)
     if (foodSwitchBtn) foodSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-rose-600 hover:bg-white/60';
     if (placeSwitchBtn) placeSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-rose-600 hover:bg-white/60';
+    if (movieSwitchBtn) movieSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-purple-600 hover:bg-white/60';
     if (wishlistSwitchBtn) wishlistSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 bg-[#7A2018] text-white shadow-sm scale-105';
 
     // Hide Minigames & Filter bars
     if (gameTabsContainer) gameTabsContainer.classList.add('hidden');
     if (foodFilters) foodFilters.classList.add('hidden');
-    if (placeFilters) {
-      placeFilters.classList.add('hidden');
-      placeFilters.classList.remove('flex');
-    }
+    if (placeFilters) { placeFilters.classList.add('hidden'); placeFilters.classList.remove('flex'); }
+    if (movieFilters) { movieFilters.classList.add('hidden'); movieFilters.classList.remove('flex'); }
     if (gameArenaContainer) gameArenaContainer.classList.add('hidden');
 
     // Show Wishlist Table
@@ -3940,6 +4555,7 @@ function setAppMode(mode) {
     // Mode: Mình Đi Đâu Za? (Minigames địa điểm)
     if (foodSwitchBtn) foodSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-rose-600 hover:bg-white/60';
     if (placeSwitchBtn) placeSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 bg-amber-500 text-white shadow-sm scale-105';
+    if (movieSwitchBtn) movieSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-purple-600 hover:bg-white/60';
     if (wishlistSwitchBtn) wishlistSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-amber-700 hover:bg-white/60';
 
     if (wishlistView) {
@@ -3950,6 +4566,7 @@ function setAppMode(mode) {
     if (gameArenaContainer) gameArenaContainer.classList.remove('hidden');
 
     if (foodFilters) foodFilters.classList.add('hidden');
+    if (movieFilters) { movieFilters.classList.add('hidden'); movieFilters.classList.remove('flex'); }
     if (placeFilters) {
       placeFilters.classList.remove('hidden');
       placeFilters.classList.add('flex');
@@ -3963,9 +4580,39 @@ function setAppMode(mode) {
     updateActivePlaceFilterCount();
     setupClawMachine();
     setupSlotMachine();
+  } else if (mode === 'movie') {
+    // Mode: Mình Xem Phim Gì Za? (Minigames phim)
+    if (foodSwitchBtn) foodSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-rose-600 hover:bg-white/60';
+    if (placeSwitchBtn) placeSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-amber-700 hover:bg-white/60';
+    if (movieSwitchBtn) movieSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 bg-purple-600 text-white shadow-sm scale-105';
+    if (wishlistSwitchBtn) wishlistSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-amber-700 hover:bg-white/60';
+
+    if (wishlistView) {
+      wishlistView.classList.add('hidden');
+      wishlistView.classList.remove('flex');
+    }
+    if (gameTabsContainer) gameTabsContainer.classList.remove('hidden');
+    if (gameArenaContainer) gameArenaContainer.classList.remove('hidden');
+
+    if (foodFilters) foodFilters.classList.add('hidden');
+    if (placeFilters) { placeFilters.classList.add('hidden'); placeFilters.classList.remove('flex'); }
+    if (movieFilters) {
+      movieFilters.classList.remove('hidden');
+      movieFilters.classList.add('flex');
+    }
+
+    if (headerMainTitle) headerMainTitle.innerHTML = 'HÔM NAY <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">XEM PHIM GÌ ZA?</span>';
+    if (headerMainIcon) headerMainIcon.textContent = '🎬';
+    if (headerMainTagline) headerMainTagline.textContent = 'Chọn nhanh phim hay, bắp rang bơ sẵn sàng theo ý chỉ Hoàng Thượng!';
+    if (headerManageText) headerManageText.innerHTML = `Kho Phim (<span id="foods-badge-count">${movies.length}</span>)`;
+
+    updateActiveMovieFilterCount();
+    setupClawMachine();
+    setupSlotMachine();
   } else {
     // Mode: Hôm Nay Ăn Gì? (Minigames đồ ăn)
     if (placeSwitchBtn) placeSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-rose-600 hover:bg-white/60';
+    if (movieSwitchBtn) movieSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-purple-600 hover:bg-white/60';
     if (foodSwitchBtn) foodSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 bg-rose-500 text-white shadow-sm scale-105';
     if (wishlistSwitchBtn) wishlistSwitchBtn.className = 'px-3 md:px-4 py-1.5 rounded-xl font-black text-xs md:text-sm transition-all duration-300 flex items-center space-x-1.5 text-stone-600 hover:text-amber-700 hover:bg-white/60';
 
@@ -3979,6 +4626,10 @@ function setAppMode(mode) {
     if (placeFilters) {
       placeFilters.classList.add('hidden');
       placeFilters.classList.remove('flex');
+    }
+    if (movieFilters) {
+      movieFilters.classList.add('hidden');
+      movieFilters.classList.remove('flex');
     }
     if (foodFilters) foodFilters.classList.remove('hidden');
 
@@ -3996,9 +4647,11 @@ function setAppMode(mode) {
 function initModeSwitcher() {
   const foodBtn = document.getElementById('mode-switch-food');
   const placeBtn = document.getElementById('mode-switch-place');
+  const movieBtn = document.getElementById('mode-switch-movie');
   const wishlistBtn = document.getElementById('mode-switch-wishlist');
   if (foodBtn) foodBtn.onclick = () => setAppMode('food');
   if (placeBtn) placeBtn.onclick = () => setAppMode('place');
+  if (movieBtn) movieBtn.onclick = () => setAppMode('movie');
   if (wishlistBtn) wishlistBtn.onclick = () => setAppMode('wishlist');
 }
 
@@ -4258,8 +4911,10 @@ function triggerUserAudioUnlock() {
 window.addEventListener('DOMContentLoaded', () => {
   loadMealTags();
   loadPlaceTags();
+  loadMovieTags();
   loadFoods();
   loadPlaces();
+  loadMovies();
   loadCoupleWishlist();
   loadSuggestions();
 
@@ -4273,10 +4928,12 @@ window.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initDualFilters();
   initPlaceFilters();
+  initMovieFilters();
   initModeSwitcher();
   initSoundToggle();
   initConfirmModal();
   initFoodManager();
+  initMoviesManager();
   initCoupleWishlist();
   updateAdminBranding();
   initSuggestionModal();
