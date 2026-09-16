@@ -2385,13 +2385,66 @@ function initFoodManager() {
     renderModalTagChips();
     renderPlaceList();
     renderModalPlaceTags();
+    renderMovieList();
+    renderModalMovieTags();
     const wlTabCount = document.getElementById('modal-wishlist-tab-count');
     if (wlTabCount) wlTabCount.textContent = coupleWishlist.length;
     const suggTabCount = document.getElementById('modal-suggestions-tab-count');
     if (suggTabCount) suggTabCount.textContent = suggestions.length;
     renderSuggestionsList();
+
+    const tabsContainer = document.getElementById('modal-category-tabs-bar');
     const tabFoods = document.getElementById('modal-tab-foods');
-    if (tabFoods) tabFoods.click();
+    const tabPlaces = document.getElementById('modal-tab-places');
+    const tabMovies = document.getElementById('modal-tab-movies');
+    const tabWishlist = document.getElementById('modal-tab-wishlist');
+    const tabSuggestions = document.getElementById('modal-tab-suggestions');
+    const modalIcon = document.getElementById('modal-header-icon');
+    const modalTitle = document.getElementById('modal-header-title');
+    const modalSubtitle = document.getElementById('modal-header-subtitle');
+
+    if (isMovieOnlyAdmin()) {
+      // Role: Movie Manager Only (Xem Phim)
+      if (tabsContainer) {
+        tabsContainer.className = 'grid grid-cols-1 gap-1.5 p-1 bg-purple-100/70 rounded-2xl border border-purple-200 mt-2 mb-1.5 flex-shrink-0';
+      }
+      if (tabFoods) tabFoods.classList.add('hidden');
+      if (tabPlaces) tabPlaces.classList.add('hidden');
+      if (tabWishlist) tabWishlist.classList.add('hidden');
+      if (tabSuggestions) tabSuggestions.classList.add('hidden');
+      if (tabMovies) {
+        tabMovies.classList.remove('hidden');
+        tabMovies.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-purple-600 shadow-sm truncate';
+      }
+      if (modalIcon) modalIcon.textContent = '🎬';
+      if (modalTitle) modalTitle.textContent = 'Quản Lý Kho Phim';
+      if (modalSubtitle) modalSubtitle.textContent = 'Thêm và chỉnh sửa các bộ phim xem cùng nhau';
+
+      if (tabMovies) tabMovies.click();
+    } else {
+      // Role: Full Admin (Lil Tâm)
+      if (tabsContainer) {
+        tabsContainer.className = 'grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-rose-100/70 rounded-2xl border border-rose-200 mt-2 mb-1.5 flex-shrink-0';
+      }
+      if (tabFoods) tabFoods.classList.remove('hidden');
+      if (tabPlaces) tabPlaces.classList.remove('hidden');
+      if (tabWishlist) tabWishlist.classList.remove('hidden');
+      if (tabSuggestions) tabSuggestions.classList.remove('hidden');
+      if (tabMovies) tabMovies.classList.remove('hidden');
+
+      if (modalIcon) modalIcon.textContent = '📋';
+      if (modalTitle) modalTitle.textContent = 'Kho Lựa Chọn Của Sen';
+      if (modalSubtitle) modalSubtitle.textContent = 'Thêm, chỉnh sửa món ăn, địa điểm & phim';
+
+      if (appMode === 'movie' && tabMovies) {
+        tabMovies.click();
+      } else if (appMode === 'place' && tabPlaces) {
+        tabPlaces.click();
+      } else if (tabFoods) {
+        tabFoods.click();
+      }
+    }
+
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     if (window.gsap) {
@@ -2400,7 +2453,10 @@ function initFoodManager() {
   }
 
   function openAuthModal() {
-    if (authErrorMsg) authErrorMsg.classList.add('hidden');
+    if (authErrorMsg) {
+      authErrorMsg.textContent = "❌ Mật khẩu không đúng rồi Sen ơi! Thử lại nha 🐾";
+      authErrorMsg.classList.add('hidden');
+    }
     if (authPasswordInput) {
       authPasswordInput.value = '';
       authPasswordInput.type = 'password';
@@ -2415,6 +2471,7 @@ function initFoodManager() {
     }
   }
   window.openAuthModal = openAuthModal;
+  window.openFoodsModalDirectly = openFoodsModalDirectly;
 
   function closeAuthModal() {
     if (authModal) {
@@ -2437,13 +2494,36 @@ function initFoodManager() {
       const entered = authPasswordInput ? authPasswordInput.value.trim().toLowerCase() : '';
       if (entered === 'liltam') {
         sessionStorage.setItem('liltam_authenticated', 'true');
+        sessionStorage.removeItem('movie_authenticated');
         closeAuthModal();
         audio.playMeow();
         showCatToast("Chào mừng Lil Tâm đã mở khóa quyền quản trị! 👑", "success");
         if (typeof updateAdminBranding === 'function') updateAdminBranding();
         openFoodsModalDirectly();
+      } else if (entered === 'xemphim' || entered === 'phim' || entered === 'xemphimza') {
+        if (appMode === 'wishlist') {
+          if (authErrorMsg) {
+            authErrorMsg.textContent = "⚠️ Mật khẩu này chỉ dùng để quản lý Phim, không có quyền sửa Sổ Tay!";
+            authErrorMsg.classList.remove('hidden');
+          }
+          if (authPasswordInput) authPasswordInput.select();
+          audio.playPop();
+          showCatToast("Mật khẩu này chỉ có quyền quản lý Phim, không có quyền sửa Sổ Tay nha Sen! 🎬", "warn");
+          return;
+        }
+
+        sessionStorage.setItem('movie_authenticated', 'true');
+        sessionStorage.removeItem('liltam_authenticated');
+        closeAuthModal();
+        audio.playMeow();
+        showCatToast("Đã mở khóa quyền quản lý danh sách Phim! 🎬🍿", "success");
+        if (typeof updateAdminBranding === 'function') updateAdminBranding();
+        openFoodsModalDirectly();
       } else {
-        if (authErrorMsg) authErrorMsg.classList.remove('hidden');
+        if (authErrorMsg) {
+          authErrorMsg.textContent = "❌ Mật khẩu không đúng rồi Sen ơi! Thử lại nha 🐾";
+          authErrorMsg.classList.remove('hidden');
+        }
         if (authPasswordInput) authPasswordInput.select();
         audio.playPop();
         if (window.gsap) {
@@ -2457,19 +2537,28 @@ function initFoodManager() {
     btnLockFoodsModal.onclick = () => {
       audio.playPop();
       sessionStorage.removeItem('liltam_authenticated');
+      sessionStorage.removeItem('movie_authenticated');
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       if (typeof updateAdminBranding === 'function') updateAdminBranding();
-      showCatToast("Đã khóa lại quyền quản trị thực đơn & địa điểm! 🔒", "warn");
+      showCatToast("Đã khóa lại quyền quản trị! 🔒", "warn");
     };
   }
 
   openBtn.onclick = () => {
     audio.playPop();
-    if (sessionStorage.getItem('liltam_authenticated') === 'true') {
-      openFoodsModalDirectly();
+    if (appMode === 'movie') {
+      if (isMovieAdmin()) {
+        openFoodsModalDirectly();
+      } else {
+        openAuthModal();
+      }
     } else {
-      openAuthModal();
+      if (isLilTamAdmin()) {
+        openFoodsModalDirectly();
+      } else {
+        openAuthModal();
+      }
     }
   };
 
@@ -3138,10 +3227,16 @@ function initModalTabs() {
   }
 
   function setTabActive(activeTab) {
+    const isMovieOnly = isMovieOnlyAdmin();
     [tabFoods, tabPlaces, tabMovies, tabWishlist, tabSuggestions].forEach(tab => {
       if (!tab) return;
+      if (isMovieOnly && tab !== tabMovies) {
+        tab.className = 'hidden';
+        return;
+      }
       if (tab === activeTab) {
-        tab.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white text-rose-600 shadow-sm truncate';
+        const activeTextColor = activeTab === tabMovies ? 'text-purple-600' : 'text-rose-600';
+        tab.className = `py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 bg-white ${activeTextColor} shadow-sm truncate`;
       } else {
         tab.className = 'py-2 px-1 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-stone-800 truncate';
       }
@@ -3150,6 +3245,10 @@ function initModalTabs() {
 
   if (tabFoods) {
     tabFoods.onclick = () => {
+      if (isMovieOnlyAdmin()) {
+        showCatToast("Mật khẩu của bạn chỉ có quyền quản lý Phim nha! 🎬", "warn");
+        return;
+      }
       audio.playPop();
       setTabActive(tabFoods);
       if (secFoods) { secFoods.classList.remove('hidden'); secFoods.classList.add('flex'); }
@@ -3162,6 +3261,10 @@ function initModalTabs() {
 
   if (tabPlaces) {
     tabPlaces.onclick = () => {
+      if (isMovieOnlyAdmin()) {
+        showCatToast("Mật khẩu của bạn chỉ có quyền quản lý Phim nha! 🎬", "warn");
+        return;
+      }
       audio.playPop();
       setTabActive(tabPlaces);
       if (secPlaces) { secPlaces.classList.remove('hidden'); secPlaces.classList.add('flex'); }
@@ -3190,6 +3293,10 @@ function initModalTabs() {
 
   if (tabWishlist) {
     tabWishlist.onclick = () => {
+      if (isMovieOnlyAdmin()) {
+        showCatToast("Mật khẩu của bạn chỉ có quyền quản lý Phim nha! 🎬", "warn");
+        return;
+      }
       audio.playPop();
       setTabActive(tabWishlist);
       if (secWishlist) { secWishlist.classList.remove('hidden'); secWishlist.classList.add('flex'); }
@@ -3203,6 +3310,10 @@ function initModalTabs() {
 
   if (tabSuggestions) {
     tabSuggestions.onclick = () => {
+      if (isMovieOnlyAdmin()) {
+        showCatToast("Mật khẩu của bạn chỉ có quyền quản lý Phim nha! 🎬", "warn");
+        return;
+      }
       audio.playPop();
       setTabActive(tabSuggestions);
       if (secSuggestions) { secSuggestions.classList.remove('hidden'); secSuggestions.classList.add('flex'); }
@@ -3930,6 +4041,14 @@ let currentWishlistCategory = 'all';
 let currentWishlistSearch = '';
 function isLilTamAdmin() {
   return sessionStorage.getItem('liltam_authenticated') === 'true';
+}
+
+function isMovieAdmin() {
+  return sessionStorage.getItem('liltam_authenticated') === 'true' || sessionStorage.getItem('movie_authenticated') === 'true';
+}
+
+function isMovieOnlyAdmin() {
+  return sessionStorage.getItem('liltam_authenticated') !== 'true' && sessionStorage.getItem('movie_authenticated') === 'true';
 }
 
 function updateAdminBranding() {
